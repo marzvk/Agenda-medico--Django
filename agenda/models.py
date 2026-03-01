@@ -34,6 +34,9 @@ class Medico(Persona):
     matricula = models.CharField(max_length=25)
     inicio_jornada = models.TimeField(verbose_name="Hora de inicio")
     fin_jornada = models.TimeField(verbose_name="Hora fin de jornada")
+    tiempo_consulta = models.PositiveIntegerField(
+        default=30, verbose_name="Duracion de consulta (minutos)"
+    )
 
 
 class Paciente(Persona):
