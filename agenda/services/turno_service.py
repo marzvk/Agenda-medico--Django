@@ -1,4 +1,4 @@
-from agenda.models import Turno
+from agenda.models import Turno, Slot
 from datetime import timedelta
 from django.db import transaction
 from django.core.exceptions import ValidationError
@@ -7,62 +7,37 @@ from django.utils import timezone
 
 class TurnoService:
 
+    #  CREAR TURNO DESDE SLOT
     @staticmethod
     @transaction.atomic
-    def crear_turno(datos: dict) -> Turno:
+    def crear_turno(slot, paciente):
 
-        medico = datos["medico"]
-        paciente = datos["paciente"]
+        slot = Slot.objects.select_for_update().get(id=slot.id)
 
-        fecha_inicio = datos["fecha_hora"]
-        if fecha_inicio.tzinfo is None:
-            fecha_inicio = timezone.make_aware(fecha_inicio)
-        duracion = datos.get("duracion_minutos", 30)
+        if not slot.disponible:
+            raise ValidationError("El slot no esta disponible")
 
-        fecha_fin = fecha_inicio + timedelta(minutes=duracion)
+        turno = Turno.objects.create(slot=slot, paciente=paciente)
 
-        TurnoService._validar_disponibilidad(medico, fecha_inicio, fecha_fin)
-        TurnoService._validar_superposicion(medico, fecha_inicio, fecha_fin)
-
-        turno = Turno.objects.create(
-            medico=medico,
-            paciente=paciente,
-            fecha_hora=fecha_inicio,
-            duracion_minutos=duracion,
-        )
-
-        TurnoService._programar_notificacion(turno)
+        slot.disponible = False
+        slot.save(update_fields=["disponible"])
 
         return turno
 
     @staticmethod
-    def _validar_disponibilidad(medico, inicio, fin):
+    @transaction.atomic
+    def cancelar_turno(turno):
+        if turno.estado == Turno.EstadoTurno.CANCELADO:
+            return turno
 
-        dia = inicio.weekday()
+        turno.estado = Turno.EstadoTurno.CANCELADO
+        turno.save()
 
-        bloques = medico.disponibilidades.filter(dias_semana=dia, activo=True)
+        slot = turno.slot
+        slot.disponible = True
+        slot.save()
 
-        if not bloques.exists():
-            raise ValidationError("El doctor no atiende este dia.")
-
-        for bloque in bloques:
-            if inicio.time() >= bloque.hora_inicio and fin.time() <= bloque.hora_fin:
-                return
-            raise ValidationError("El turno esta fuera del horario del doctor.")
-
-    @staticmethod
-    def _validar_superposicion(medico, inicio, fin):
-
-        turnos = Turno.objects.filter(
-            medico=medico, estado=Turno.EstadoTurno.PROGRAMADO
-        )
-
-        for turno in turnos:
-            existente_inicio = turno.fecha_hora
-            existente_fin = existente_inicio + timedelta(minutes=turno.duracion_minutos)
-
-            if existente_inicio < fin and existente_fin > inicio:
-                raise ValidationError("El medico ya tiene turno en ese horario")
+        return turno
 
     @staticmethod
     def _programar_notificacion(turno):
