@@ -53,14 +53,11 @@ class Turno(models.Model):
         CANCELADO = "CA", "Cancelado"
         AUSENTE = "AU", "Ausente"
 
-    medico = models.ForeignKey(Medico, on_delete=models.CASCADE, related_name="turnos")
     paciente = models.ForeignKey(
         Paciente, on_delete=models.CASCADE, related_name="turnos"
     )
-    fecha_hora = models.DateTimeField()
-    duracion_minutos = models.IntegerField(
-        default=30, verbose_name="duracion del turno"
-    )
+
+    slot = models.ForeignKey("Slot", on_delete=models.CASCADE, related_name="turnos")
     notas = models.TextField(blank=True)
     estado = models.CharField(
         choices=EstadoTurno.choices,
@@ -69,34 +66,10 @@ class Turno(models.Model):
     )
 
     class Meta:
-        ordering = ["fecha_hora"]
+        ordering = ["slot__fecha", "slot__hora_inicio"]
 
     def __str__(self):
-        return f"Turno: {self.paciente}, hora: {self.fecha_hora}"
-
-    def fecha_fin(self):
-        return self.fecha_hora + timedelta(minutes=self.duracion_minutos)
-
-    def clean(self):
-        if self.estado != self.EstadoTurno.PROGRAMADO:
-            return
-
-        conflicto = Turno.objects.filter(
-            medico=self.medico,
-            estado=self.EstadoTurno.PROGRAMADO,
-            fecha_hora__lt=self.fecha_fin(),
-        ).exclude(pk=self.pk)
-
-        for turno in conflicto:
-            existente_inicio = turno.fecha_hora
-            existente_fin = turno.fecha_fin()
-
-            if existente_fin > self.fecha_hora:
-                raise ValidationError("conflicto de horario en modelo")
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
+        return f"Turno: {self.paciente} - {self.slot.fecha} {self.slot.hora_inicio}"
 
 
 class DisponibilidadSemanal(models.Model):
