@@ -57,7 +57,7 @@ class Turno(models.Model):
         Paciente, on_delete=models.CASCADE, related_name="turnos"
     )
 
-    slot = models.ForeignKey("Slot", on_delete=models.CASCADE, related_name="turnos")
+    slot = models.OneToOneField("Slot", on_delete=models.CASCADE, related_name="turno")
     notas = models.TextField(blank=True)
     estado = models.CharField(
         choices=EstadoTurno.choices,

@@ -10,11 +10,9 @@ class TurnoService:
     #  CREAR TURNO DESDE SLOT
     @staticmethod
     @transaction.atomic
-    def crear_turno(slot_id, paciente):
-        try:
-            slot = Slot.objects.select_for_update().get(id=slot_id)
-        except Slot.DoesNotExist:
-            raise ValidationError("El slot no existe")
+    def crear_turno(slot, paciente):
+
+        slot = Slot.objects.select_for_update().get(id=slot.id)
 
         if not slot.disponible:
             raise ValidationError("El slot no esta disponible")
@@ -22,7 +20,7 @@ class TurnoService:
         turno = Turno.objects.create(slot=slot, paciente=paciente)
 
         slot.disponible = False
-        turno.save()
+        slot.save(update_fields=["disponible"])
 
         return turno
 
