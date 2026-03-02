@@ -127,3 +127,19 @@ class DisponibilidadSemanal(models.Model):
 
     def __str__(self):
         return f"{self.medico} - {self.get_dia_semana_display()} {self.hora_inicio}-{self.hora_fin}"
+
+
+# MODELO SLOT
+class Slot(models.Model):
+    medico = models.ForeignKey(Medico, on_delete=models.CASCADE, related_name="slots")
+    fecha = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_fin = models.TimeField()
+    disponible = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ("medico", "fecha", "hora_inicio")
+        ordering = ["fecha", "hora_inicio"]
+
+    def __str__(self):
+        return f"{self.medico} {self.fecha} {self.hora_inicio}-{self.hora_fin}"

@@ -3,9 +3,9 @@ from django.utils import timezone
 from datetime import timedelta, date, time
 from django.core.exceptions import ValidationError
 
-from .models import Turno, DisponibilidadSemanal
-from .services.turno_service import TurnoService
-from .models import Medico, Paciente
+from ..models import Turno, DisponibilidadSemanal
+from ..services.turno_service import TurnoService
+from ..models import Medico, Paciente
 
 
 class TurnoServiceTest(TestCase):
