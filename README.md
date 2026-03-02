@@ -11,3 +11,7 @@
 -La disponibilidad se controla exclusivamente mediante el modelo Slot.
 
 -La lógica de negocio se encuentra en services (SlotService y TurnoService).
+
+-Se garantiza consistencia mediante transacciones atómicas y bloqueo(select_for_update).
+
+-Se aplica restricción estructural OneToOne entre Slot y Turno.
