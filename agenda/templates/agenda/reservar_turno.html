@@ -1,0 +1,21 @@
+<h2>Reservar turno</h2>
+
+<p>
+    Fecha: {{ slot.fecha }} <br>
+    Hora: {{ slot.hora_inicio }} - {{ slot.hora_fin }}
+</p>
+
+<form method="post">
+    {% csrf_token %}
+
+    <label>Paciente:</label>
+    <select name="paciente_id" required>
+        {% for paciente in pacientes %}
+        <option value="{{ paciente.id }}">
+            {{ paciente }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Confirmar reserva</button>
+</form>

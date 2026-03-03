@@ -1,0 +1,27 @@
+<h2>Turnos</h2>
+
+<table>
+    <tr>
+        <th>Fecha</th>
+        <th>Hora</th>
+        <th>Paciente</th>
+        <th>Estado</th>
+        <th>Acción</th>
+    </tr>
+
+    {% for turno in turnos %}
+    <tr>
+        <td>{{ turno.slot.fecha }}</td>
+        <td>{{ turno.slot.hora_inicio }} - {{ turno.slot.hora_fin }}</td>
+        <td>{{ turno.paciente }}</td>
+        <td>{{ turno.estado }}</td>
+        <td>
+            {% if turno.estado != "CANCELADO" %}
+            <a href="{% url 'agenda:cancelar_turno' turno.id %}">
+                Cancelar
+            </a>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
