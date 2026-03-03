@@ -1,0 +1,15 @@
+<h2>Médicos</h2>
+
+<ul>
+    {% for medico in medicos %}
+    <li>
+        {{ medico }}
+        <a href="{% url 'agenda:generar_agenda' medico.id %}">
+            Generar agenda
+        </a>
+        <a href="{% url 'agenda:agenda_medico' medico.id %}">
+            Agenda del medico
+        </a>
+    </li>
+    {% endfor %}
+</ul>

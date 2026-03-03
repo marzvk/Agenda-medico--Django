@@ -99,7 +99,7 @@ class DisponibilidadSemanal(models.Model):
         ordering = ["medico", "dias_semana", "hora_inicio"]
 
     def __str__(self):
-        return f"{self.medico} - {self.get_dia_semana_display()} {self.hora_inicio}-{self.hora_fin}"
+        return f"{self.medico} - {self.get_dias_semana_display()} {self.hora_inicio}-{self.hora_fin}"
 
 
 # MODELO SLOT

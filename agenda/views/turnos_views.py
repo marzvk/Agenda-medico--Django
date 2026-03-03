@@ -14,7 +14,7 @@ def lista_slots(request):
 
     slots = Slot.objects.filter(disponible=True).order_by("fecha", "hora_inicio")
 
-    return render(request, "agenda/lista_slots.html", {"slots": slots})
+    return render(request, "agenda/slots/lista_slots.html", {"slots": slots})
 
 
 def reservar_turno(request, slot_id):
@@ -37,17 +37,21 @@ def reservar_turno(request, slot_id):
     pacientes = Paciente.objects.all()
 
     return render(
-        request, "agenda/reservar_turno.html", {"slot": slot, "pacientes": pacientes}
+        request,
+        "agenda/turnos/reservar_turno.html",
+        {"slot": slot, "pacientes": pacientes},
     )
 
 
 def lista_turnos(request):
 
-    turnos = Turno.objects.select_related("slot", "paciente").order_by(
-        "slot__fecha", "slot__hora_inicio"
+    turnos = (
+        Turno.objects.select_related("slot", "paciente")
+        .exclude(estado=Turno.EstadoTurno.CANCELADO)
+        .order_by("slot__fecha", "slot__hora_inicio")
     )
 
-    return render(request, "agenda/lista_turnos.html", {"turnos": turnos})
+    return render(request, "agenda/turnos/lista_turnos.html", {"turnos": turnos})
 
 
 def cancelar_turno(request, turno_id):

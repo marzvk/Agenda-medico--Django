@@ -1,0 +1,25 @@
+<h2>Agenda de {{ medico }}</h2>
+
+<table>
+    <tr>
+        <th>Fecha</th>
+        <th>Hora</th>
+        <th>Estado</th>
+        <th>Paciente</th>
+    </tr>
+
+    {% for slot in slots %}
+    <tr>
+        <td>{{ slot.fecha }}</td>
+        <td>{{ slot.hora_inicio }}</td>
+
+        {% if slot.disponible %}
+        <td>Disponible</td>
+        <td>-</td>
+        {% else %}
+        <td>Reservado</td>
+        <td>{{ slot.turno.paciente }}</td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</table>
