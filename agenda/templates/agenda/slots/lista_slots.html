@@ -1,21 +1,87 @@
-<h2>Slots disponibles</h2>
+{% extends "base.html" %}
 
-<table>
-    <tr>
-        <th>Fecha</th>
-        <th>Hora</th>
-        <th>Acción</th>
-    </tr>
+{% block title %}Slots Disponibles{% endblock %}
 
-    {% for slot in slots %}
-    <tr>
-        <td>{{ slot.fecha }}</td>
-        <td>{{ slot.hora_inicio }} - {{ slot.hora_fin }}</td>
-        <td>
-            <a href="{% url 'agenda:reservar_turno' slot.id %}">
-                Reservar
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+{% block content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="mb-3">
+            <div class="btn-group" role="group" aria-label="Accesos rápidos">
+                <a href="?fecha={{ hoy_str }}"
+                    class="btn btn-outline-secondary {% if fecha_actual == hoy_str %}active{% endif %}">
+                    ☀️ Hoy
+                </a>
+                <a href="?fecha={{ manana_str }}"
+                    class="btn btn-outline-secondary {% if fecha_actual == manana_str %}active{% endif %}">
+                    🌅 Mañana
+                </a>
+                <a href="{% url 'agenda:lista_slots' %}" class="btn btn-outline-secondary">
+                    🔄 Ver Todo (Futuro)
+                </a>
+            </div>
+        </div>
+        <h2 class="card-title mb-4">🔍 Buscar Disponibilidad</h2>
+
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Fecha</label>
+                <input type="date" name="fecha" class="form-control" value="{{ fecha_actual }}">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Médico</label>
+                <select name="medico" class="form-select">
+                    <option value="">Todos los médicos</option>
+                    {% for m in medicos %}
+                    <option value="{{ m.id }}">{{ m.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Filtrar Agenda</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h3 class="h5 mb-3">Slots Libres</h3>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Médico</th>
+                        <th class="text-end">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slot in slots %}
+                    <tr>
+                        <td>{{ slot.fecha|date:"d/m/Y" }}</td>
+                        <td>
+                            <span class="badge bg-info text-dark">
+                                {{ slot.hora_inicio|time:"H:i" }} - {{ slot.hora_fin|time:"H:i" }}
+                            </span>
+                        </td>
+                        <td>{{ slot.medico.nombre }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'agenda:reservar_turno' slot.id %}" class="btn btn-sm btn-success">
+                                ✅ Reservar
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            No hay slots disponibles para los criterios seleccionados.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

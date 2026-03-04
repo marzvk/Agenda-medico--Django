@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MedSystem{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            overflow-x: hidden;
+            background-color: #f4f7f6;
+        }
+
+        #wrapper {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        #sidebar {
+            min-width: 250px;
+            max-width: 250px;
+            min-height: 100vh;
+            background: #212529;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        #sidebar .sidebar-header {
+            padding: 20px;
+            background: #1a1d20;
+            border-bottom: 1px solid #373b3e;
+        }
+
+        #sidebar ul li a {
+            padding: 15px 20px;
+            display: block;
+            color: #adb5bd;
+            text-decoration: none;
+            border-bottom: 1px solid #2c3136;
+        }
+
+        #sidebar ul li a:hover {
+            background: #343a40;
+            color: #fff;
+        }
+
+        #content {
+            width: 100%;
+            padding: 20px;
+        }
+
+        .nav-active {
+            color: #fff !important;
+            background: #0d6efd !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="wrapper">
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h3>🩺 MedAgenda</h3>
+            </div>
+
+            <ul class="list-unstyled components">
+                <li>
+                    <a href="{% url 'agenda:index' %}">🏠 Inicio</a>
+                </li>
+                <li>
+                    <a href="{% url 'agenda:lista_slots' %}">📅 Agenda de Slots</a>
+                </li>
+                <li>
+                    <a href="{% url 'agenda:lista_turnos' %}">📋 Gestión de Turnos</a>
+                </li>
+                <li>
+                    <a href="{% url 'agenda:lista_medicos' %}">👨‍⚕️ Mis Médicos</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div id="content">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

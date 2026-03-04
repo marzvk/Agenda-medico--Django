@@ -1,20 +1,46 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
-from agenda.models import Slot, Paciente, Turno
+from agenda.models import Slot, Paciente, Turno, Medico
 from django.contrib import messages
 from agenda.services.turno_service import TurnoService
 from django.core.exceptions import ValidationError
+from datetime import date, timedelta
 
 
 def index(request):
-    return HttpResponse("Hello, world. You're at the agenda index.")
+    return render(request, "index.html")
 
 
 def lista_slots(request):
 
-    slots = Slot.objects.filter(disponible=True).order_by("fecha", "hora_inicio")
+    fecha_query = request.GET.get("fecha")
+    medico_id = request.GET.get("medico")
 
-    return render(request, "agenda/slots/lista_slots.html", {"slots": slots})
+    hoy = date.today()
+    manana = hoy + timedelta(days=1)
+
+    slots = (
+        Slot.objects.filter(disponible=True)
+        .select_related("medico")
+        .order_by("fecha", "hora_inicio")
+    )
+
+    if fecha_query:
+        slots = slots.filter(fecha=fecha_query)
+    elif not medico_id:
+        slots = slots.filter(fecha__gte=hoy)
+
+    if medico_id:
+        slots = slots.filter(medico_id=medico_id)
+
+    context = {
+        "slots": slots,
+        "medicos": Medico.objects.all(),
+        "fecha_actual": fecha_query or str(hoy),
+        "hoy_str": str(hoy),
+        "manana_str": str(manana),
+    }
+    return render(request, "agenda/slots/lista_slots.html", context)
 
 
 def reservar_turno(request, slot_id):
