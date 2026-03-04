@@ -10,6 +10,9 @@ urlpatterns = [
     path("slots/", views.lista_slots, name="lista_slots"),
     path("reservar/<int:slot_id>/", views.reservar_turno, name="reservar_turno"),
     path("turnos/", views.lista_turnos, name="lista_turnos"),
+    path(
+        "turnos/<int:turno_id>/asistido/", views.marcar_asistido, name="marcar_asistido"
+    ),
     path("cancelar/<int:turno_id>/", views.cancelar_turno, name="cancelar_turno"),
     path("medicos/", medico.lista_medicos, name="lista_medicos"),
     path(

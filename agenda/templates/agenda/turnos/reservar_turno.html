@@ -1,21 +1,48 @@
-<h2>Reservar turno</h2>
+{% extends "base.html" %}
 
-<p>
-    Fecha: {{ slot.fecha }} <br>
-    Hora: {{ slot.hora_inicio }} - {{ slot.hora_fin }}
-</p>
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-primary text-white">
+            <h3 class="h5 mb-0">Confirmar Reserva</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info py-2">
+                <strong>Fecha:</strong> {{ slot.fecha|date:"d/m/Y" }} <br>
+                <strong>Hora:</strong> {{ slot.hora_inicio|time:"H:i" }} - {{ slot.hora_fin|time:"H:i" }} <br>
+                <strong>Médico:</strong> {{ slot.medico.apellido }} {{ slot.medico.nombre }}
+            </div>
 
-<form method="post">
-    {% csrf_token %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Buscar Paciente:</label>
+                    <input class="form-control" list="datalistOptions" id="pacienteSearch"
+                        placeholder="Escriba para buscar..." name="paciente_id_search">
+                    <datalist id="datalistOptions">
+                        {% for p in pacientes %}
+                        <option value="{{ p.id }} - {{ p.apellido }}, {{ p.nombre }}">
+                            {% endfor %}
+                    </datalist>
+                    <input type="hidden" name="paciente_id" id="paciente_id_real">
+                </div>
 
-    <label>Paciente:</label>
-    <select name="paciente_id" required>
-        {% for paciente in pacientes %}
-        <option value="{{ paciente.id }}">
-            {{ paciente }}
-        </option>
-        {% endfor %}
-    </select>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success">Confirmar Turno</button>
+                    <a href="{% url 'agenda:lista_slots' %}" class="btn btn-light">Volver</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-    <button type="submit">Confirmar reserva</button>
-</form>
+<script>
+
+    document.getElementById('pacienteSearch').addEventListener('input', function (e) {
+        let val = e.target.value;
+        if (val.includes(' - ')) {
+            document.getElementById('paciente_id_real').value = val.split(' - ')[0];
+        }
+    });
+</script>
+{% endblock %}

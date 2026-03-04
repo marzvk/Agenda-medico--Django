@@ -11,13 +11,24 @@ def index(request):
     return render(request, "index.html")
 
 
+# MOSTRAR LOS SLOTS
 def lista_slots(request):
 
     fecha_query = request.GET.get("fecha")
     medico_id = request.GET.get("medico")
 
     hoy = date.today()
-    manana = hoy + timedelta(days=1)
+
+    proximo_disponible = (
+        Slot.objects.filter(disponible=True, fecha__gt=hoy)
+        .order_by("fecha")
+        .values_list("fecha", flat=True)
+        .first()
+    )
+
+    target_manana = (
+        str(proximo_disponible) if proximo_disponible else str(hoy + timedelta(days=1))
+    )
 
     slots = (
         Slot.objects.filter(disponible=True)
@@ -30,37 +41,44 @@ def lista_slots(request):
     elif not medico_id:
         slots = slots.filter(fecha__gte=hoy)
 
+    medico_seleccionado = None
     if medico_id:
         slots = slots.filter(medico_id=medico_id)
+        medico_seleccionado = Medico.objects.filter(id=medico_id).first()
+
+    dias_con_slots = (
+        Slot.objects.filter(disponible=True, fecha__gte=hoy)
+        .values_list("fecha", flat=True)
+        .distinct()
+        .order_by("fecha")
+    )
 
     context = {
         "slots": slots,
         "medicos": Medico.objects.all(),
         "fecha_actual": fecha_query or str(hoy),
+        "medico_seleccionado": medico_seleccionado,
         "hoy_str": str(hoy),
-        "manana_str": str(manana),
+        "manana_inteligente": target_manana,
+        "dias_con_slots": dias_con_slots,
     }
     return render(request, "agenda/slots/lista_slots.html", context)
 
 
+# TURNO RESERVA
 def reservar_turno(request, slot_id):
 
     slot = get_object_or_404(Slot, id=slot_id)
+    pacientes = Paciente.objects.all().order_by("apellido", "nombre")
 
     if request.method == "POST":
 
         paciente_id = request.POST.get("paciente_id")
         paciente = get_object_or_404(Paciente, id=paciente_id)
 
-        try:
-            TurnoService.crear_turno(slot, paciente)
-            messages.success(request, "Turno reservado con exito")
-            return redirect("agenda:lista_slots")
-
-        except ValidationError as e:
-            messages.error(request, str(e))
-
-    pacientes = Paciente.objects.all()
+        TurnoService.crear_turno(slot, paciente)
+        messages.success(request, "Turno reservado con exito")
+        return redirect("agenda:lista_slots")
 
     return render(
         request,
@@ -69,15 +87,51 @@ def reservar_turno(request, slot_id):
     )
 
 
+def marcar_asistido(request, turno_id):
+    turno = get_object_or_404(Turno, id=turno_id)
+    turno.estado = "AS"
+    turno.save()
+    messages.success(
+        request, f"El paciente {turno.paciente} ha sido marcado como presente"
+    )
+    return redirect("agenda:lista_turnos")
+
+
+# LISTA TODOS LOS TURNOS
 def lista_turnos(request):
 
+    fecha_query = request.GET.get("fecha")
+    medico_id = request.GET.get("medico")
+    hoy = date.today()
+
     turnos = (
-        Turno.objects.select_related("slot", "paciente")
+        Turno.objects.select_related("slot__medico", "paciente")
         .exclude(estado=Turno.EstadoTurno.CANCELADO)
         .order_by("slot__fecha", "slot__hora_inicio")
     )
 
-    return render(request, "agenda/turnos/lista_turnos.html", {"turnos": turnos})
+    medico_seleccionado = None
+    if medico_id:
+        turnos = turnos.filter(slot__medico_id=medico_id)
+        medico_seleccionado = Medico.objects.filter(id=medico_id).first()
+
+    if fecha_query:
+        turnos = turnos.filter(slot__fecha=fecha_query)
+    else:
+
+        turnos = turnos.filter(slot__fecha__gte=hoy)
+
+    context = {
+        "turnos": turnos,
+        "medicos": Medico.objects.all(),
+        "medico_seleccionado": medico_seleccionado,
+        "medico_seleccionado_lista": (
+            [medico_seleccionado.id] if medico_seleccionado else []
+        ),
+        "fecha_actual": fecha_query or str(hoy),
+        "hoy_str": str(hoy),
+    }
+    return render(request, "agenda/turnos/lista_turnos.html", context)
 
 
 def cancelar_turno(request, turno_id):
