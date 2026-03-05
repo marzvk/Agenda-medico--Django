@@ -69,16 +69,24 @@ def lista_slots(request):
 def reservar_turno(request, slot_id):
 
     slot = get_object_or_404(Slot, id=slot_id)
+    if not slot.disponible:
+        messages.error(request, "Este turno ya fue reservado por otra persona.")
+        return redirect("agenda:agenda_medico", medico_id=slot.medico.id)
+
     pacientes = Paciente.objects.all().order_by("apellido", "nombre")
 
     if request.method == "POST":
-
         paciente_id = request.POST.get("paciente_id")
         paciente = get_object_or_404(Paciente, id=paciente_id)
 
-        TurnoService.crear_turno(slot, paciente)
-        messages.success(request, "Turno reservado con exito")
-        return redirect("agenda:lista_slots")
+        try:
+            TurnoService.crear_turno(slot, paciente)
+
+            messages.success(request, "Turno reservado con éxito")
+        except Exception as e:
+            messages.error(request, f"Error al reservar: {e}")
+
+        return redirect("agenda:agenda_medico", medico_id=slot.medico.id)
 
     return render(
         request,
@@ -137,9 +145,12 @@ def lista_turnos(request):
 def cancelar_turno(request, turno_id):
 
     turno = get_object_or_404(Turno, id=turno_id)
+    medico_id = turno.slot.medico.id
 
-    TurnoService.cancelar_turno(turno)
+    if request.method == "POST":
 
-    messages.success(request, "Turno cancelado.")
+        TurnoService.cancelar_turno(turno)
+        messages.warning(request, f"Turno de {turno.paciente} cancelado con éxito.")
+        return redirect("agenda:agenda_medico", medico_id=medico_id)
 
-    return redirect("agenda:lista_turnos")
+    return render(request, "agenda/turnos/confirmar_cancelacion.html", {"turno": turno})

@@ -1,15 +1,68 @@
-<h2>Médicos</h2>
+{% extends "base.html" %}
 
-<ul>
-    {% for medico in medicos %}
-    <li>
-        {{ medico }}
-        <a href="{% url 'agenda:generar_agenda' medico.id %}">
-            Generar agenda
-        </a>
-        <a href="{% url 'agenda:agenda_medico' medico.id %}">
-            Agenda del medico
-        </a>
-    </li>
-    {% endfor %}
-</ul>
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Panel de Profesionales</h2>
+        <input type="text" id="buscadorMedico" class="form-control w-25" placeholder="Buscar por nombre..."
+            onkeyup="filtrarMedicos()">
+    </div>
+
+    <div class="row" id="contenedorMedicos">
+        {% for medico in medicos %}
+        <div class="col-md-4 mb-4 card-medico">
+            <div class="card h-100 shadow-sm {% if not medico.ultima_agenda %}border-danger{% endif %}">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ medico.apellido }}, {{ medico.nombre }}</h5>
+                    <h6 class="card-subtitle mb-2 text-muted">{{ medico.especialidad }}</h6>
+                    <hr>
+                    <p class="card-text">
+                        <strong>Slots Libres:</strong>
+                        <span class="badge {% if medico.slots_libres > 0 %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ medico.slots_libres }} disponibles
+                        </span>
+                        <br>
+                        <small class="text-muted">
+                            Agenda generada hasta:
+                            {% if medico.ultima_agenda %}
+                            {{ medico.ultima_agenda|date:"d/m/Y" }}
+                            {% else %}
+                            <span class="text-danger fw-bold">SIN AGENDA</span>
+                            {% endif %}
+                        </small>
+                    </p>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 d-grid gap-2">
+                    <a href="{% url 'agenda:agenda_medico' medico.id %}" class="btn btn-outline-primary">
+                        Ver Agenda
+                    </a>
+
+                    <a href="{% url 'agenda:generar_agenda' medico.id %}" class="btn btn-sm btn-light text-muted"
+                        onclick="{{ confirm_msg }}">
+                        Generar más turnos
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const inputBusqueda = document.getElementById('buscadorMedico');
+
+        if (inputBusqueda) {
+            inputBusqueda.addEventListener('input', function () {
+                let filtro = this.value.toLowerCase();
+                let tarjetas = document.querySelectorAll('.card-medico');
+
+                tarjetas.forEach(tarjeta => {
+                    let texto = tarjeta.innerText.toLowerCase();
+                    tarjeta.style.display = texto.includes(filtro) ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -17,7 +17,13 @@ class TurnoService:
         if not slot.disponible:
             raise ValidationError("El slot no esta disponible")
 
-        turno = Turno.objects.create(slot=slot, paciente=paciente)
+        turno, created = Turno.objects.update_or_create(
+            slot=slot,
+            defaults={
+                "paciente": paciente,
+                "estado": Turno.EstadoTurno.PROGRAMADO,
+            },
+        )
 
         slot.disponible = False
         slot.save(update_fields=["disponible"])
