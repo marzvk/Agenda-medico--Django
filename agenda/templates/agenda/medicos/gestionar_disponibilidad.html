@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Configurar Horarios Base: {{ medico.apellido }}, {{ medico.nombre }}</h5>
+            <span class="badge bg-info">Duración actual: {{ medico.tiempo_consulta }} min</span>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-4">
+                Defina los bloques horarios habituales. Estos se usarán como plantilla para generar los turnos masivamente.
+            </p>
+
+            <form method="POST">
+                {% csrf_token %}
+                {{ formset.management_form }}
+
+                <div class="card mb-4 border-primary">
+                    <div class="card-body bg-light">
+                        <h5 class="card-title text-primary"><i class="bi bi-clock-history"></i> Configuración de Turnos</h5>
+                        <div class="row align-items-center">
+                            <div class="col-md-auto">
+                                <label for="{{ tiempo_form.tiempo_consulta.id_for_label }}" class="form-label mb-0">
+                                    {{ tiempo_form.tiempo_consulta.label }}:
+                                </label>
+                            </div>
+                            <div class="col-md-3">
+                                {{ tiempo_form.tiempo_consulta }}
+                                {% if tiempo_form.tiempo_consulta.errors %}
+                                    <div class="text-danger small">{{ tiempo_form.tiempo_consulta.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 text-muted small">
+                                <i class="bi bi-info-circle"></i> 
+                                Este tiempo se usará para calcular los bloques cuando generes la agenda.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Día de la Semana</th>
+                                <th>Hora Inicio</th>
+                                <th>Hora Fin</th>
+                                <th class="text-center">Activo</th>
+                                <th class="text-center text-danger">¿Eliminar?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for form in formset %}
+                            <tr>
+                                {{ form.id }}
+                                <td>
+                                    {{ form.dias_semana }}
+                                    {% if form.dias_semana.errors %}
+                                        <div class="text-danger small">{{ form.dias_semana.errors }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ form.hora_inicio }}</td>
+                                <td>{{ form.hora_fin }}</td>
+                                <td class="text-center">{{ form.activo }}</td>
+                                <td class="text-center">
+                                    {% if form.instance.pk %}
+                                        <div class="form-check d-flex justify-content-center">
+                                            {{ form.DELETE }}
+                                        </div>
+                                    {% else %}
+                                        <small class="text-muted">Nuevo</small>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'agenda:generar_agenda' medico.id %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver sin guardar
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert alert-warning mt-4 small">
+        <i class="bi bi-exclamation-triangle"></i> 
+        <strong>Nota:</strong> Los cambios realizados aquí no afectan a los turnos ya generados. 
+        Para aplicar estos cambios a días futuros, debe volver a la pantalla anterior y usar el modo "Borrar y regenerar".
+    </div>
+</div>
+{% endblock %}

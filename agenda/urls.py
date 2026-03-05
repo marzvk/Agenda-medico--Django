@@ -23,4 +23,9 @@ urlpatterns = [
         medico.agenda_medico,
         name="agenda_medico",
     ),
+    path(
+        "medico/<int:medico_id>/disponibilidad/",
+        medico.gestionar_disponibilidad,
+        name="gestionar_disponibilidad",
+    ),
 ]
