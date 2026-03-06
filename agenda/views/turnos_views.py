@@ -98,6 +98,7 @@ def reservar_turno(request, slot_id):
 def marcar_asistido(request, turno_id):
     turno = get_object_or_404(Turno, id=turno_id)
     turno.estado = "AS"
+    turno.notas = request.POST.get("notas", "")
     turno.save()
     messages.success(
         request, f"El paciente {turno.paciente} ha sido marcado como presente"
@@ -111,6 +112,23 @@ def lista_turnos(request):
     fecha_query = request.GET.get("fecha")
     medico_id = request.GET.get("medico")
     hoy = date.today()
+
+    dias_semana = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
+    proximos_dias = []
+    for i in range(6):  # Hoy + Mañana + 4 días más = 6 botones
+        dia = hoy + timedelta(days=i)
+
+        if i == 0:
+            label = "Hoy"
+        elif i == 1:
+            label = "Mañana"
+        else:
+
+            nombre_dia = dias_semana[dia.weekday()]
+            label = f"{nombre_dia} {dia.day}/{dia.month}"
+
+        proximos_dias.append({"fecha": str(dia), "label": label})
 
     turnos = (
         Turno.objects.select_related("slot__medico", "paciente")
@@ -127,7 +145,7 @@ def lista_turnos(request):
         turnos = turnos.filter(slot__fecha=fecha_query)
     else:
 
-        turnos = turnos.filter(slot__fecha__gte=hoy)
+        turnos = turnos.filter(slot__fecha__range=[hoy, hoy + timedelta(days=7)])
 
     context = {
         "turnos": turnos,
@@ -136,6 +154,7 @@ def lista_turnos(request):
         "medico_seleccionado_lista": (
             [medico_seleccionado.id] if medico_seleccionado else []
         ),
+        "proximos_dias": proximos_dias,
         "fecha_actual": fecha_query or str(hoy),
         "hoy_str": str(hoy),
     }

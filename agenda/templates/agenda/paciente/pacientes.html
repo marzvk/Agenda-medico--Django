@@ -52,7 +52,11 @@
                     {% for p in pacientes %}
                     <tr>
                         <td><strong>{{ p.dni }}</strong></td>
-                        <td>{{ p.apellido|upper }}, {{ p.nombre }}</td>
+                        <td>
+                            <a href="{% url 'agenda:detalle_paciente' p.id %}" class="text-decoration-none fw-bold">
+                                {{ p.apellido|upper }}, {{ p.nombre }}
+                            </a>
+                        </td>
                         <td>{{ p.email }}</td>
                         <td>{{ p.edad }} años</td>
                         <td>{{ p.telefono }}</td>

@@ -16,13 +16,13 @@
             <form method="post">
                 {% csrf_token %}
                 <div class="mb-3">
-                    <label class="form-label">Buscar Paciente:</label>
+                    <label class="form-label">Buscar Paciente (DNI o Nombre):</label>
                     <input class="form-control" list="datalistOptions" id="pacienteSearch"
-                        placeholder="Escriba para buscar..." name="paciente_id_search">
+                        placeholder="Ingrese DNI o Apellido..." name="paciente_id_search" autocomplete="off">
                     <datalist id="datalistOptions">
                         {% for p in pacientes %}
-                        <option value="{{ p.id }} - {{ p.apellido }}, {{ p.nombre }}">
-                            {% endfor %}
+                        <option value="{{ p.id }} - {{ p.dni }} - {{ p.apellido }}, {{ p.nombre }}">
+                        {% endfor %}
                     </datalist>
                     <input type="hidden" name="paciente_id" id="paciente_id_real">
                 </div>
@@ -37,7 +37,6 @@
 </div>
 
 <script>
-
     document.getElementById('pacienteSearch').addEventListener('input', function (e) {
         let val = e.target.value;
         if (val.includes(' - ')) {

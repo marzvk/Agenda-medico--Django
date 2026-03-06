@@ -78,6 +78,9 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-light">
                     <h5 class="mb-0">Días con Agenda (Próximos)</h5>
+                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalSlotManual">
+                        ➕ Slot Manual
+                    </button>
                 </div>
                 <div class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
                     {% for dia in dias_con_agenda %}
@@ -109,4 +112,56 @@
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalSlotManual" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Slot Individual</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'agenda:crear_slot_manual' medico.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" class="form-control" required value="{{ hoy|date:'Y-m-d' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Hora Inicio</label>
+                            <input type="time" name="hora_inicio" id="h_inicio" class="form-control" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Hora Fin</label>
+                            <input type="time" name="hora_fin" id="h_fin" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-muted small">
+                        Duración sugerida: {{ medico.tiempo_consulta }} minutos.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('h_inicio').addEventListener('change', function() {
+        let hInicio = this.value;
+        if (hInicio) {
+            let [hours, minutes] = hInicio.split(':');
+            let date = new Date();
+            date.setHours(parseInt(hours));
+            date.setMinutes(parseInt(minutes) + {{ medico.tiempo_consulta }});
+            
+            let hEnd = date.getHours().toString().padStart(2, '0');
+            let mEnd = date.getMinutes().toString().padStart(2, '0');
+            document.getElementById('h_fin').value = `${hEnd}:${mEnd}`;
+        }
+    })
+</script>
 {% endblock %}

@@ -7,12 +7,12 @@
     <div class="card-body">
         <div class="mb-3">
             <div class="btn-group" role="group" aria-label="Accesos rápidos">
-                <a href="?fecha={{ hoy_str }}"
+                <a href="?fecha={{ hoy_str }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
                     class="btn btn-outline-secondary {% if fecha_actual == hoy_str %}active{% endif %}">
                     ☀️ Hoy
                 </a>
 
-                <a href="?fecha={{ manana_inteligente }}"
+                <a href="?fecha={{ manana_inteligente }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
                     class="btn btn-outline-primary {% if fecha_actual == manana_inteligente %}active{% endif %}">
                     ⏭️ Próximo Disponible
                     {% if manana_inteligente != hoy_str and fecha_actual != manana_inteligente %}
@@ -24,11 +24,17 @@
                     🔄 Ver Todo (Futuro)
                 </a>
             </div>
+            {% if medico_seleccionado %}
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalSlotManual">
+                ➕ Crear Slot Extra (Dr. {{ medico_seleccionado.apellido }})
+            </button>
+            {% endif %}
         </div>
         <div class="mb-3">
             <small class="text-muted d-block mb-2">Días con lugares libres próximamente:</small>
             {% for dia in dias_con_slots|slice:":7" %}
-            <a href="?fecha={{ dia|date:'Y-m-d' }}" class="badge rounded-pill bg-success text-decoration-none me-1">
+            <a href="?fecha={{ dia|date:'Y-m-d' }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}" 
+               class="badge rounded-pill bg-success text-decoration-none me-1">
                 {{ dia|date:"D d" }}
             </a>
             {% endfor %}
@@ -45,7 +51,9 @@
                 <select name="medico" class="form-select">
                     <option value="">Todos los médicos</option>
                     {% for m in medicos %}
-                    <option value="{{ m.id }}">{{ m.nombre }}</option>
+                    <option value="{{ m.id }}" {% if medico_seleccionado.id == m.id %}selected{% endif %}>
+                        {{ m.nombre }}
+                    </option>
                     {% endfor %}
                 </select>
             </div>
@@ -55,6 +63,7 @@
         </form>
     </div>
 </div>
+
 <div class="card shadow-sm">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -109,4 +118,61 @@
         </div>
     </div>
 </div>
+
+{% if medico_seleccionado %}
+<div class="modal fade" id="modalSlotManual" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Crear Slot Extra Manual</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'agenda:crear_slot_manual' medico_seleccionado.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" class="form-control" required value="{{ fecha_actual }}">
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Hora Inicio</label>
+                            <input type="time" name="hora_inicio" id="h_inicio_lista" class="form-control" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Hora Fin</label>
+                            <input type="time" name="hora_fin" id="h_fin_lista" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-muted small">
+                        Duración de consulta: {{ medico_seleccionado.tiempo_consulta }} min.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Generar y Recargar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('h_inicio_lista').addEventListener('change', function() {
+        let hInicio = this.value;
+        if (hInicio) {
+            let [hours, minutes] = hInicio.split(':');
+            let date = new Date();
+            date.setHours(parseInt(hours));
+            date.setMinutes(parseInt(minutes) + {{ medico_seleccionado.tiempo_consulta }});
+            
+            let hEnd = date.getHours().toString().padStart(2, '0');
+            let mEnd = date.getMinutes().toString().padStart(2, '0');
+            document.getElementById('h_fin_lista').value = `${hEnd}:${mEnd}`;
+        }
+    });
+</script>
+{% endif %}
+
+
 {% endblock %}

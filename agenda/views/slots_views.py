@@ -5,7 +5,7 @@ from agenda.models import Medico, Slot, DisponibilidadSemanal
 from agenda.services.slot_service import generar_slots_para_medico
 from django.utils import timezone
 from django.db.models import Count, Q
-from datetime import timedelta
+from datetime import timedelta, datetime, time
 from django.db import transaction
 
 
@@ -126,3 +126,36 @@ def generar_agenda(request, medico_id):
         "dias_nombres": DisponibilidadSemanal.DIAS_SEMANA,
     }
     return render(request, "agenda/medicos/generar_agenda.html", context)
+
+
+def crear_slot_manual(request, medico_id):
+    medico = get_object_or_404(Medico, id=medico_id)
+
+    if request.method == "POST":
+        fecha = request.POST.get("fecha")
+        h_inicio = request.POST.get("hora_inicio")
+        h_fin = request.POST.get("hora_fin")
+
+        # Validar superposición
+        existe_choque = Slot.objects.filter(
+            medico=medico, fecha=fecha, hora_inicio__lt=h_fin, hora_fin__gt=h_inicio
+        ).exists()
+
+        if existe_choque:
+            messages.error(
+                request, "Error: Ya existe un turno que se superpone con este horario."
+            )
+        else:
+            try:
+                Slot.objects.create(
+                    medico=medico,
+                    fecha=fecha,
+                    hora_inicio=h_inicio,
+                    hora_fin=h_fin,
+                    disponible=True,
+                )
+                messages.success(request, "Slot individual creado con éxito.")
+            except Exception as e:
+                messages.error(request, f"Error al crear el slot: {e}")
+
+    return redirect("agenda:generar_agenda", medico_id=medico.id)

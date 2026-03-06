@@ -1,8 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from ..models import Paciente
+from ..models import Paciente, Turno
 from django import forms
 from django.contrib import messages
 from django.db import models
+from django.utils import timezone
 
 
 class PacienteForm(forms.ModelForm):
@@ -93,4 +94,27 @@ def crear_paciente(request):
         request,
         "agenda/paciente/paciente_form.html",
         {"form": form, "titulo": "Nuevo Paciente"},
+    )
+
+
+def detalle_paciente(request, paciente_id):
+    paciente = get_object_or_404(Paciente, id=paciente_id)
+    hoy = timezone.now().date()
+
+    proximos_turnos = paciente.turnos.filter(
+        slot__fecha__gte=hoy, estado=Turno.EstadoTurno.PROGRAMADO
+    ).order_by("slot__fecha", "slot__hora_inicio")
+
+    historial_turnos = paciente.turnos.all().order_by(
+        "-slot__fecha", "-slot__hora_inicio"
+    )
+
+    return render(
+        request,
+        "agenda/paciente/detalle_paciente.html",
+        {
+            "paciente": paciente,
+            "proximos_turnos": proximos_turnos,
+            "historial_turnos": historial_turnos,
+        },
     )
