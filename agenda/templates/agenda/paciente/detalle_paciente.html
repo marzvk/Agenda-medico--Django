@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Ficha del Paciente</h2>
+        <a href="{% url 'agenda:lista_pacientes' %}" class="btn btn-outline-secondary">Volver al listado</a>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body bg-light rounded">
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-1 text-muted small text-uppercase fw-bold">Nombre Completo</p>
+                    <h4 class="mb-0">{{ paciente.apellido|upper }}, {{ paciente.nombre }}</h4>
+                </div>
+                <div class="col-md-2">
+                    <p class="mb-1 text-muted small text-uppercase fw-bold">DNI</p>
+                    <h5 class="mb-0">{{ paciente.dni }}</h5>
+                </div>
+                <div class="col-md-3">
+                    <p class="mb-1 text-muted small text-uppercase fw-bold">Teléfono / Email</p>
+                    <p class="mb-0">{{ paciente.telefono }}</p>
+                    <p class="text-muted small">{{ paciente.email }}</p>
+                </div>
+                <div class="col-md-3 text-end">
+                     <a href="{% url 'agenda:editar_paciente' paciente.id %}" class="btn btn-sm btn-primary">Editar Datos</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="mb-3 text-primary"><i class="bi bi-calendar-event"></i> Próximos Turnos Programados</h5>
+    <div class="card shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-info">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Médico</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in proximos_turnos %}
+                    <tr>
+                        <td><strong>{{ t.slot.fecha|date:"d/m/Y" }}</strong></td>
+                        <td>{{ t.slot.hora_inicio|time:"H:i" }}</td>
+                        <td>Dr. {{ t.slot.medico.apellido }}</td>
+                        <td><span class="badge bg-primary">Programado</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-muted text-center py-3">No tiene turnos pendientes.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h5 class="mb-3 text-secondary"><i class="bi bi-clock-history"></i> Historial Completo de Turnos</h5>
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Médico</th>
+                        <th>Estado</th>
+                        <th>Notas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in historial_turnos %}
+                    <tr>
+                        <td>{{ t.slot.fecha|date:"d/m/Y" }}</td>
+                        <td>Dr. {{ t.slot.medico.apellido }}</td>
+                        <td>
+                            {% if t.estado == 'PR' %}<span class="badge bg-primary">Programado</span>
+                            {% elif t.estado == 'AS' %}<span class="badge bg-success">Asistido</span>
+                            {% elif t.estado == 'CA' %}<span class="badge bg-danger">Cancelado</span>
+                            {% else %}<span class="badge bg-warning text-dark">Ausente</span>{% endif %}
+                        </td>
+                        <td class="small text-muted">{{ t.notas|truncatechars:30 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

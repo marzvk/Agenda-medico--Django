@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-danger mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0">¿Confirmar cancelación?</h4>
+        </div>
+        <div class="card-body">
+            <p>Estás por cancelar el turno de:</p>
+            <div class="alert alert-secondary">
+                <strong>Paciente:</strong> {{ turno.paciente.apellido }}, {{ turno.paciente.nombre }} <br>
+                <strong>Médico:</strong> {{ turno.slot.medico }} <br>
+                <strong>Fecha:</strong> {{ turno.slot.fecha|date:"d/m/Y" }}
+                <strong>- Hora:</strong> {{ turno.slot.hora_inicio|time:"H:i" }}
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-danger">Sí, cancelar turno</button>
+                    <a href="{% url 'agenda:agenda_medico' turno.slot.medico.id %}" class="btn btn-light">
+                        No, volver atrás
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

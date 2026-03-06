@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gestionar Agenda: {{ medico.apellido }}, {{ medico.nombre }}</h2>
+        <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-secondary">Volver</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Generar Nuevos Turnos</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">¿Cuántas semanas generar?</label>
+                            <input type="number" name="semanas" class="form-control" value="4" min="1" max="12">
+                            <small class="text-muted">Desde mañana {{ hoy|date:"d/m" }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                        <label class="form-label d-block">Días a incluir:</label>
+                        {% for id, nombre in dias_nombres %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="dias_seleccionados"
+                                value="{{ id }}" id="dia_{{ id }}" 
+                                {% if id in dias_trabajo_ids %}checked{% endif %}>
+                            <label class="form-check-label" for="dia_{{ id }}">{{ nombre }}</label>
+                        </div>
+                        {% endfor %}
+                        </div>
+
+                        <div class="mt-3 p-2 bg-light border rounded">
+                            <small class="text-muted d-block mb-1"><strong>Configuración de horarios:</strong></small>
+                            <ul class="list-unstyled mb-0" style="font-size: 0.85rem;">
+                                {% for disp in configuracion_actual %}
+                                <li>
+                                    <i class="bi bi-clock"></i> 
+                                    {{ disp.get_dias_semana_display }}: {{ disp.hora_inicio|time:"H:i" }} - {{ disp.hora_fin|time:"H:i" }}
+                                </li>
+                                {% empty %}
+                                <li class="text-danger">El médico no tiene horarios cargados.</li>
+                                {% endfor %}
+                            </ul>
+                            <a href="{% url 'agenda:gestionar_disponibilidad' medico.id %}" class="d-block mt-2">
+                                + Editar horarios base
+                            </a>
+                        </div>
+
+
+                        <div class="mb-3">
+                            <label class="form-label d-block">Acción sobre slots existentes:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modo" value="ignorar" checked>
+                                <label class="form-check-label">Solo agregar lo que falta</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="modo" value="reemplazar">
+                                <label class="form-check-label text-danger">Borrar disponibles y regenerar</label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100"
+                            onclick="return confirm('¿Confirmas la generación de la agenda con estos parámetros?');">
+                            Generar Agenda
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Días con Agenda (Próximos)</h5>
+                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalSlotManual">
+                        ➕ Slot Manual
+                    </button>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 500px; overflow-y: auto;">
+                    {% for dia in dias_con_agenda %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ dia.fecha|date:"l d/m/Y" }}</strong>
+                            <br>
+                            <small class="text-muted">{{ dia.total_slots }} slots ({{ dia.ocupados }} ocupados)</small>
+                        </div>
+
+                        {% if dia.ocupados == 0 %}
+                        <form action="#" method="POST" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="fecha_eliminar" value="{{ dia.fecha|date:'Y-m-d' }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('¿Eliminar todos los turnos de este día?');">
+                                Cancelar Día
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Tiene turnos ocupados</span>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">No hay agenda generada para el futuro.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="modalSlotManual" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Crear Slot Individual</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'agenda:crear_slot_manual' medico.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" name="fecha" class="form-control" required value="{{ hoy|date:'Y-m-d' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Hora Inicio</label>
+                            <input type="time" name="hora_inicio" id="h_inicio" class="form-control" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Hora Fin</label>
+                            <input type="time" name="hora_fin" id="h_fin" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-muted small">
+                        Duración sugerida: {{ medico.tiempo_consulta }} minutos.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Slot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('h_inicio').addEventListener('change', function() {
+        let hInicio = this.value;
+        if (hInicio) {
+            let [hours, minutes] = hInicio.split(':');
+            let date = new Date();
+            date.setHours(parseInt(hours));
+            date.setMinutes(parseInt(minutes) + {{ medico.tiempo_consulta }});
+            
+            let hEnd = date.getHours().toString().padStart(2, '0');
+            let mEnd = date.getMinutes().toString().padStart(2, '0');
+            document.getElementById('h_fin').value = `${hEnd}:${mEnd}`;
+        }
+    })
+</script>
+{% endblock %}

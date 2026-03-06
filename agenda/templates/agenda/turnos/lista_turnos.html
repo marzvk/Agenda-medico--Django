@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Bienvenido al Sistema de Agenda</h1>
+<br>
+<div class="btn-group flex-wrap mb-4" role="group">
+    {% for dia in proximos_dias %}
+        <a href="?fecha={{ dia.fecha }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}" 
+           class="btn {% if fecha_actual == dia.fecha %}btn-primary active{% else %}btn-outline-primary{% endif %}">
+            {{ dia.label }}
+        </a>
+    {% endfor %}
+</div>
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h4 mb-3">📋 Gestión de Turnos</h2>
+        <form method="GET" class="row g-3">
+            <div class="col-md-5">
+                <input type="date" name="fecha" class="form-control" value="{{ fecha_actual }}">
+            </div>
+            <div class="col-md-5">
+                <select name="medico" class="form-select">
+                    <option value="">Todos los médicos</option>
+                    {% for m in medicos %}
+                    <option value="{{ m.id }}" {% if m.id in medico_seleccionado_lista %}selected{% endif %}>
+                        {{ m.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <h3 class="h5 mb-3">
+            {% if medico_seleccionado %}
+            Pacientes de Dr. {{ medico_seleccionado.apellido }} {{ medico_seleccionado.nombre }}
+            {% else %}
+            Lista General
+            {% endif %}
+        </h3>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha/Hora</th>
+                        <th>Paciente</th>
+                        {% if not medico_seleccionado %}
+                        <th>Médico</th>
+                        {% endif %}
+                        <th>Estado</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for turno in turnos %}
+                    <tr>
+                        <td>
+                            <strong>{{ turno.slot.fecha|date:"d/m" }}</strong><br>
+                            <small class="text-muted">{{ turno.slot.hora_inicio|time:"H:i" }}</small>
+                        </td>
+                        <td>{{ turno.paciente.nombre }} {{ turno.paciente.apellido }}</td>
+                        {% if not medico_seleccionado %}
+                        <td>{{ turno.slot.medico.nombre }}</td>
+                        {% endif %}
+                        <td>
+                            {% if turno.estado == 'PR' %}
+                            <span class="badge bg-primary">Programado</span>
+                            {% elif turno.estado == 'AS' %}
+                            <span class="badge bg-success">Asistió</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ turno.get_estado_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                {% if turno.estado == 'PR' %}
+                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalAsistencia{{ turno.id }}">
+                                        📍 Llegó
+                                    </button>
+                                
+                                    <form action="{% url 'agenda:cancelar_turno' turno.id %}" method="POST" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Anular este turno?')">
+                                            Cancelar
+                                        </button>
+                                    </form>
+                                {% elif turno.estado == 'AS' %}
+                                    <span class="text-success small fw-bold mt-1">
+                                        <i class="bi bi-check-circle-fill"></i> Completado
+                                    </span>
+                                {% endif %}
+                            </div>
+                        
+                            {% if turno.id %}
+                            <div class="modal fade text-start" id="modalAsistencia{{ turno.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-success text-white">
+                                            <h5 class="modal-title">Confirmar Asistencia</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form action="{% url 'agenda:marcar_asistido' turno.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <div class="modal-body">
+                                                <p>¿Desea registrar alguna nota para <strong>{{ turno.paciente.nombre }} {{ turno.paciente.apellido }}</strong>?</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label text-muted small">Notas / Observaciones (Opcional):</label>
+                                                    <textarea name="notas" class="form-control" rows="3" placeholder="Ej: Control rutinario..."></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                                <button type="submit" class="btn btn-success">Confirmar Llegada</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr> {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">No hay turnos registrados.</td>
+                    </tr>
+                    {% endfor %} </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

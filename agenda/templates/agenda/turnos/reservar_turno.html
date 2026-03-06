@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-primary text-white">
+            <h3 class="h5 mb-0">Confirmar Reserva</h3>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info py-2">
+                <strong>Fecha:</strong> {{ slot.fecha|date:"d/m/Y" }} <br>
+                <strong>Hora:</strong> {{ slot.hora_inicio|time:"H:i" }} - {{ slot.hora_fin|time:"H:i" }} <br>
+                <strong>Médico:</strong> {{ slot.medico.apellido }} {{ slot.medico.nombre }}
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Buscar Paciente (DNI o Nombre):</label>
+                    <input class="form-control" list="datalistOptions" id="pacienteSearch"
+                        placeholder="Ingrese DNI o Apellido..." name="paciente_id_search" autocomplete="off">
+                    <datalist id="datalistOptions">
+                        {% for p in pacientes %}
+                        <option value="{{ p.id }} - {{ p.dni }} - {{ p.apellido }}, {{ p.nombre }}">
+                        {% endfor %}
+                    </datalist>
+                    <input type="hidden" name="paciente_id" id="paciente_id_real">
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success">Confirmar Turno</button>
+                    <a href="{% url 'agenda:agenda_medico' slot.medico.id %}" class="btn btn-light">Volver</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('pacienteSearch').addEventListener('input', function (e) {
+        let val = e.target.value;
+        if (val.includes(' - ')) {
+            document.getElementById('paciente_id_real').value = val.split(' - ')[0];
+        }
+    });
+</script>
+{% endblock %}

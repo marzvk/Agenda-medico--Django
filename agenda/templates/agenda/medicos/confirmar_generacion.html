@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-warning shadow-sm">
+        <div class="card-body text-center">
+            <h3 class="card-title text-warning">⚠️ Confirmar Generación</h3>
+            <p class="card-text">
+                ¿Está seguro que desea generar los slots de atención para los próximos <strong>30 días</strong>
+                del médico <strong>{{ medico }}</strong>?
+            </p>
+            <p class="text-muted small">Esto no borrará turnos ya reservados.</p>
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mt-4">
+                    <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-warning">Sí, generar agenda</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
