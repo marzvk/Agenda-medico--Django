@@ -2,6 +2,7 @@ from django.urls import path
 from .views import turnos_views as views
 from agenda.views.slots_views import generar_agenda
 from .views import medico_views as medico
+from .views.pacientes_views import lista_pacientes, editar_paciente, crear_paciente
 
 app_name = "agenda"
 
@@ -28,4 +29,7 @@ urlpatterns = [
         medico.gestionar_disponibilidad,
         name="gestionar_disponibilidad",
     ),
+    path("pacientes/", lista_pacientes, name="lista_pacientes"),
+    path("pacientes/nuevo/", crear_paciente, name="crear_paciente"),
+    path("pacientes/editar/<int:pk>/", editar_paciente, name="editar_paciente"),
 ]

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ titulo }}</h4>
+                    <a href="{% url 'agenda:lista_pacientes' %}" class="btn btn-sm btn-light">Volver</a>
+                </div>
+                <div class="card-body">
+                    <form method="POST" class="row g-3">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="col-md-4">
+                                {% if field.name == 'posee_obra_social' %}
+                                    <div class="form-check mt-4 pt-2">
+                                        {{ field }}
+                                        <label class="form-check-label fw-bold">{{ field.label }}</label>
+                                    </div>
+                                {% else %}
+                                    <label class="form-label fw-bold small text-muted">{{ field.label }}</label>
+                                    {{ field }}
+                                {% endif %}
+                                
+                                {% if field.errors %}
+                                    <div class="text-danger small">{{ field.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                        
+                        <div class="col-12 mt-4 border-top pt-3 text-end">
+                            <button type="submit" class="btn btn-success px-5">
+                                <i class="bi bi-check-circle"></i> Guardar Paciente
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

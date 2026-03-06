@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 class Persona(models.Model):
     nombre = models.CharField(max_length=60)
     apellido = models.CharField(max_length=35)
+    dni = models.CharField(max_length=15, unique=True, db_index=True)
     fecha_nacimiento = models.DateField()
     telefono = models.CharField(max_length=20)
     email = models.EmailField(unique=True)
@@ -43,6 +44,9 @@ class Paciente(Persona):
     historia_clinica = models.TextField()
     posee_obra_social = models.BooleanField()
     obra_social = models.CharField(max_length=40)
+
+    def __str__(self):
+        return f"{self.apellido}, {self.nombre} (DNI: {self.dni})"
 
 
 class Turno(models.Model):
