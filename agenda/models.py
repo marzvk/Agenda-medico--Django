@@ -1,6 +1,7 @@
 from django.db import models
 from datetime import date, timedelta
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
 
 
 class Persona(models.Model):
@@ -31,6 +32,15 @@ class Persona(models.Model):
 
 
 class Medico(Persona):
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="perfil_medico",
+    )
+
     especialidad = models.CharField(max_length=35)
     matricula = models.CharField(max_length=25)
     inicio_jornada = models.TimeField(verbose_name="Hora de inicio")
