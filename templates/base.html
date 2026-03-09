@@ -73,9 +73,11 @@
                 <li>
                     <a href="{% url 'agenda:lista_slots' %}">📅 Agenda de Turnos</a>
                 </li>                
+                {% if not es_medico %}
                 <li>
                     <a href="{% url 'agenda:lista_medicos' %}">👨‍⚕️ Mis Médicos</a>
                 </li>
+                {% endif %}
                 <li>
                     <a href="{% url 'agenda:lista_pacientes' %}">👥 Pacientes</a>
                 </li>

@@ -4,6 +4,7 @@ from django import forms
 from django.contrib import messages
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 
 
 class PacienteForm(forms.ModelForm):
@@ -41,28 +42,44 @@ class PacienteForm(forms.ModelForm):
         }
 
 
+@login_required
 def lista_pacientes(request):
     query = request.GET.get("q", "")
+    es_medico = hasattr(request.user, "perfil_medico")
 
+    # 1. Seguridad en la Acción de Borrar
     if request.method == "POST" and "borrar" in request.POST:
-        paciente_id = request.POST.get("paciente_id")
-        paciente = get_object_or_404(Paciente, id=paciente_id)
-        paciente.delete()
-        messages.success(request, "Paciente eliminado.")
+        # Solo permitimos borrar si NO es médico (es Admin/Secretaria)
+        if not es_medico:
+            paciente_id = request.POST.get("paciente_id")
+            paciente = get_object_or_404(Paciente, id=paciente_id)
+            paciente.delete()
+            messages.success(request, "Paciente eliminado.")
+        else:
+            messages.error(request, "No tiene permisos para eliminar pacientes.")
         return redirect("agenda:lista_pacientes")
 
+    # 2. Definir la base de pacientes según el rol
+    if es_medico:
+        # Solo pacientes que tienen o tuvieron turnos con este médico específico
+        pacientes_base = Paciente.objects.filter(
+            turnos__slot__medico=request.user.perfil_medico
+        ).distinct()
+    else:
+        # Administradores ven todo
+        pacientes_base = Paciente.objects.all()
+
+    # 3. Aplicar la búsqueda sobre la base ya filtrada
     if query:
-        pacientes = Paciente.objects.filter(
+        pacientes = pacientes_base.filter(
             models.Q(dni__icontains=query) | models.Q(apellido__icontains=query)
         ).order_by("apellido")
     else:
-        pacientes = Paciente.objects.all().order_by("apellido")
+        pacientes = pacientes_base.order_by("apellido")
 
-    return render(
-        request,
-        "agenda/paciente/pacientes.html",
-        {"pacientes": pacientes, "query": query},
-    )
+    context = {"pacientes": pacientes, "query": query, "es_medico": es_medico}
+
+    return render(request, "agenda/paciente/pacientes.html", context)
 
 
 def editar_paciente(request, pk):

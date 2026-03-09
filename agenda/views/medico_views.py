@@ -8,6 +8,7 @@ from agenda.forms import DisponibilidadFormSet, MedicoTiempoForm
 from django.contrib import messages
 
 
+@login_required
 def lista_medicos(request):
     hoy = timezone.now().date()
 
@@ -23,7 +24,7 @@ def lista_medicos(request):
     )
 
 
-# @login_required
+@login_required
 def agenda_medico(request, medico_id):
 
     medico = get_object_or_404(Medico, pk=medico_id)
@@ -46,6 +47,7 @@ def agenda_medico(request, medico_id):
     )
 
 
+@login_required
 def gestionar_disponibilidad(request, medico_id):
     medico = get_object_or_404(Medico, id=medico_id)
 

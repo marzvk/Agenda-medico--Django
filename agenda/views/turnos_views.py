@@ -5,6 +5,7 @@ from django.contrib import messages
 from agenda.services.turno_service import TurnoService
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
+from django.contrib.auth.decorators import login_required
 
 
 def index(request):
@@ -12,15 +13,26 @@ def index(request):
 
 
 # MOSTRAR LOS SLOTS
+@login_required
 def lista_slots(request):
-
     fecha_query = request.GET.get("fecha")
     medico_id = request.GET.get("medico")
-
     hoy = date.today()
 
+    # 1. Identificar si es Médico y definir el QuerySet base
+    es_medico = hasattr(request.user, "perfil_medico")
+
+    if es_medico:
+        medico_actual = request.user.perfil_medico
+        slots_base = Slot.objects.filter(medico=medico_actual, disponible=True)
+        lista_medicos = [medico_actual]
+    else:
+        slots_base = Slot.objects.filter(disponible=True)
+        lista_medicos = Medico.objects.all()
+
+    # 2. Lógica de "Próximo disponible" y "Días con slots" (usando el base filtrado)
     proximo_disponible = (
-        Slot.objects.filter(disponible=True, fecha__gt=hoy)
+        slots_base.filter(fecha__gt=hoy)
         .order_by("fecha")
         .values_list("fecha", flat=True)
         .first()
@@ -30,11 +42,15 @@ def lista_slots(request):
         str(proximo_disponible) if proximo_disponible else str(hoy + timedelta(days=1))
     )
 
-    slots = (
-        Slot.objects.filter(disponible=True)
-        .select_related("medico")
-        .order_by("fecha", "hora_inicio")
+    dias_con_slots = (
+        slots_base.filter(fecha__gte=hoy)
+        .values_list("fecha", flat=True)
+        .distinct()
+        .order_by("fecha")
     )
+
+    # 3. Aplicar filtros de búsqueda (Fecha y Médico seleccionado)
+    slots = slots_base.select_related("medico").order_by("fecha", "hora_inicio")
 
     if fecha_query:
         slots = slots.filter(fecha=fecha_query)
@@ -42,30 +58,27 @@ def lista_slots(request):
         slots = slots.filter(fecha__gte=hoy)
 
     medico_seleccionado = None
-    if medico_id:
+    if es_medico:
+        medico_seleccionado = medico_actual
+    elif medico_id:
         slots = slots.filter(medico_id=medico_id)
         medico_seleccionado = Medico.objects.filter(id=medico_id).first()
 
-    dias_con_slots = (
-        Slot.objects.filter(disponible=True, fecha__gte=hoy)
-        .values_list("fecha", flat=True)
-        .distinct()
-        .order_by("fecha")
-    )
-
     context = {
         "slots": slots,
-        "medicos": Medico.objects.all(),
+        "medicos": lista_medicos,
         "fecha_actual": fecha_query or str(hoy),
         "medico_seleccionado": medico_seleccionado,
         "hoy_str": str(hoy),
         "manana_inteligente": target_manana,
         "dias_con_slots": dias_con_slots,
+        "es_medico": es_medico,
     }
     return render(request, "agenda/slots/lista_slots.html", context)
 
 
 # TURNO RESERVA
+@login_required
 def reservar_turno(request, slot_id):
 
     slot = get_object_or_404(Slot, id=slot_id)
@@ -107,6 +120,7 @@ def marcar_asistido(request, turno_id):
 
 
 # LISTA TODOS LOS TURNOS
+@login_required
 def lista_turnos(request):
 
     fecha_query = request.GET.get("fecha")
@@ -130,16 +144,25 @@ def lista_turnos(request):
 
         proximos_dias.append({"fecha": str(dia), "label": label})
 
-    turnos = (
+    turnos_base = (
         Turno.objects.select_related("slot__medico", "paciente")
         .exclude(estado=Turno.EstadoTurno.CANCELADO)
         .order_by("slot__fecha", "slot__hora_inicio")
     )
+    es_medico = hasattr(request.user, "perfil_medico")
 
-    medico_seleccionado = None
-    if medico_id:
-        turnos = turnos.filter(slot__medico_id=medico_id)
-        medico_seleccionado = Medico.objects.filter(id=medico_id).first()
+    if es_medico:
+        # Si es médico, forzamos que solo vea LO SUYO
+        medico_actual = request.user.perfil_medico
+        turnos = turnos_base.filter(slot__medico=medico_actual)
+        medico_seleccionado = medico_actual
+    else:
+        # Si no es médico (Admin/Secretaria)
+        turnos = turnos_base
+        medico_seleccionado = None
+        if medico_id:
+            turnos = turnos.filter(slot__medico_id=medico_id)
+            medico_seleccionado = Medico.objects.filter(id=medico_id).first()
 
     if fecha_query:
         turnos = turnos.filter(slot__fecha=fecha_query)
@@ -157,6 +180,7 @@ def lista_turnos(request):
         "proximos_dias": proximos_dias,
         "fecha_actual": fecha_query or str(hoy),
         "hoy_str": str(hoy),
+        "es_medico": es_medico,
     }
     return render(request, "agenda/turnos/lista_turnos.html", context)
 

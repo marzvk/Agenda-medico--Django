@@ -19,14 +19,23 @@
                 <input type="date" name="fecha" class="form-control" value="{{ fecha_actual }}">
             </div>
             <div class="col-md-5">
-                <select name="medico" class="form-select">
-                    <option value="">Todos los médicos</option>
+                <select name="medico" class="form-select" {% if es_medico %}disabled{% endif %}>
+                    {% if not es_medico %}
+                        <option value="">Todos los médicos</option>
+                    {% endif %}
+
                     {% for m in medicos %}
                     <option value="{{ m.id }}" {% if m.id in medico_seleccionado_lista %}selected{% endif %}>
-                        {{ m.nombre }}
+                        {{ m.apellido }}, {{ m.nombre }}
                     </option>
                     {% endfor %}
                 </select>
+
+                {% if es_medico %}
+                    <input type="hidden" name="medico" value="{{ medico_seleccionado.id }}">
+                    <div class="form-text text-primary">Vista restringida a su agenda personal.</div>
+                {% endif %}
+                
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary w-100">Filtrar</button>
