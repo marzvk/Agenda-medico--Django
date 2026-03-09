@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 
 
 class PacienteForm(forms.ModelForm):
@@ -82,8 +83,14 @@ def lista_pacientes(request):
     return render(request, "agenda/paciente/pacientes.html", context)
 
 
+@login_required
 def editar_paciente(request, pk):
     paciente = get_object_or_404(Paciente, pk=pk)
+
+    if hasattr(request.user, "perfil_medico"):
+        if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
+            raise PermissionDenied
+
     form = PacienteForm(request.POST or None, instance=paciente)
 
     if request.method == "POST":
@@ -99,7 +106,11 @@ def editar_paciente(request, pk):
     )
 
 
+@login_required
 def crear_paciente(request):
+    if hasattr(request.user, "perfil_medico"):
+        raise PermissionDenied
+
     form = PacienteForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
@@ -114,8 +125,14 @@ def crear_paciente(request):
     )
 
 
+@login_required
 def detalle_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
+
+    if hasattr(request.user, "perfil_medico"):
+        if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
+            raise PermissionDenied
+
     hoy = timezone.now().date()
 
     proximos_turnos = paciente.turnos.filter(

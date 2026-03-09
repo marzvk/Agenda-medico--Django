@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5 text-center">
+    <h1 class="display-1 text-danger">403</h1>
+    <h2>Acceso Restringido</h2>
+    <p>Usted no tiene permisos para ver la ficha de este paciente.</p>
+    <a href="{% url 'agenda:lista_pacientes' %}" class="btn btn-primary">Volver al inicio</a>
+</div>
+{% endblock %}
