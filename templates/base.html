@@ -73,12 +73,35 @@
                 <li>
                     <a href="{% url 'agenda:lista_slots' %}">📅 Agenda de Turnos</a>
                 </li>                
+                {% if not es_medico %}
                 <li>
                     <a href="{% url 'agenda:lista_medicos' %}">👨‍⚕️ Mis Médicos</a>
                 </li>
+                {% endif %}
                 <li>
                     <a href="{% url 'agenda:lista_pacientes' %}">👥 Pacientes</a>
                 </li>
+
+                <hr class="bg-light mx-3">
+        {% if user.is_authenticated %}
+        <li class="px-3 mb-2">
+            <small class="text-muted">Conectado como:</small><br>
+            <span class="badge bg-primary">{{ user.username }}</span>
+        </li>
+        <li>
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link text-decoration-none text-danger w-100 text-start px-3 py-2">
+                    🚪 Cerrar Sesión
+                </button>
+            </form>
+        </li>
+        {% else %}
+        <li>
+            <a href="{% url 'login' %}">🔑 Iniciar Sesión</a>
+        </li>
+        {% endif %}
+        
             </ul>
         </nav>
 

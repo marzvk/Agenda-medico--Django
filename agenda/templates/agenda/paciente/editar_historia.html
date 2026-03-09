@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'agenda:lista_pacientes' %}">Pacientes</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'agenda:detalle_paciente' paciente.id %}">Ficha de {{ paciente.apellido }}</a></li>
+            <li class="breadcrumb-item active">Nueva Evolución</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-pencil-square"></i> Nueva Evolución Médica
+            </h5>
+            <span class="badge bg-white text-success">{{ paciente.apellido|upper }}, {{ paciente.nombre }}</span>
+        </div>
+        <div class="card-body bg-light">
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="alert alert-info py-2 small">
+                    <i class="bi bi-info-circle"></i> La fecha y hora se registrarán automáticamente al guardar.
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Registro de la consulta:</label>
+                    {# Aquí Django renderiza el textarea #}
+                    {{ form.historia_clinica }}
+                    <div class="form-text">
+                        Tip: Describa síntomas, diagnóstico y tratamiento indicado hoy.
+                    </div>
+                </div>
+
+                <hr>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-person-badge"></i> Médico: {{ request.user.get_full_name|default:request.user.username }}
+                    </p>
+                    <div class="gap-2">
+                        <a href="{% url 'agenda:detalle_paciente' paciente.id %}" class="btn btn-outline-secondary">
+                            Descartar
+                        </a>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="bi bi-check-lg"></i> Guardar Evolución
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

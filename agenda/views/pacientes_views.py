@@ -4,6 +4,9 @@ from django import forms
 from django.contrib import messages
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from agenda.forms import HistoriaClinicaForm
 
 
 class PacienteForm(forms.ModelForm):
@@ -41,32 +44,54 @@ class PacienteForm(forms.ModelForm):
         }
 
 
+@login_required
 def lista_pacientes(request):
     query = request.GET.get("q", "")
+    es_medico = hasattr(request.user, "perfil_medico")
 
+    # 1. Seguridad en la Acción de Borrar
     if request.method == "POST" and "borrar" in request.POST:
-        paciente_id = request.POST.get("paciente_id")
-        paciente = get_object_or_404(Paciente, id=paciente_id)
-        paciente.delete()
-        messages.success(request, "Paciente eliminado.")
+        # Solo permitimos borrar si NO es médico (es Admin/Secretaria)
+        if not es_medico:
+            paciente_id = request.POST.get("paciente_id")
+            paciente = get_object_or_404(Paciente, id=paciente_id)
+            paciente.delete()
+            messages.success(request, "Paciente eliminado.")
+        else:
+            messages.error(request, "No tiene permisos para eliminar pacientes.")
         return redirect("agenda:lista_pacientes")
 
+    # 2. Definir la base de pacientes según el rol
+    if es_medico:
+        # Solo pacientes que tienen o tuvieron turnos con este médico específico
+        pacientes_base = Paciente.objects.filter(
+            turnos__slot__medico=request.user.perfil_medico
+        ).distinct()
+    else:
+        # Administradores ven todo
+        pacientes_base = Paciente.objects.all()
+
+    # 3. Aplicar la búsqueda sobre la base ya filtrada
     if query:
-        pacientes = Paciente.objects.filter(
+        pacientes = pacientes_base.filter(
             models.Q(dni__icontains=query) | models.Q(apellido__icontains=query)
         ).order_by("apellido")
     else:
-        pacientes = Paciente.objects.all().order_by("apellido")
+        pacientes = pacientes_base.order_by("apellido")
 
-    return render(
-        request,
-        "agenda/paciente/pacientes.html",
-        {"pacientes": pacientes, "query": query},
-    )
+    context = {"pacientes": pacientes, "query": query, "es_medico": es_medico}
+
+    return render(request, "agenda/paciente/pacientes.html", context)
 
 
+@login_required
 def editar_paciente(request, pk):
     paciente = get_object_or_404(Paciente, pk=pk)
+
+    if hasattr(request.user, "perfil_medico"):
+        if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
+            raise PermissionDenied
+
     form = PacienteForm(request.POST or None, instance=paciente)
 
     if request.method == "POST":
@@ -82,7 +107,11 @@ def editar_paciente(request, pk):
     )
 
 
+@login_required
 def crear_paciente(request):
+    if hasattr(request.user, "perfil_medico"):
+        raise PermissionDenied
+
     form = PacienteForm(request.POST or None)
     if request.method == "POST":
         if form.is_valid():
@@ -97,24 +126,68 @@ def crear_paciente(request):
     )
 
 
+@login_required
 def detalle_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
-    hoy = timezone.now().date()
+    es_medico = hasattr(request.user, "perfil_medico")
 
-    proximos_turnos = paciente.turnos.filter(
-        slot__fecha__gte=hoy, estado=Turno.EstadoTurno.PROGRAMADO
-    ).order_by("slot__fecha", "slot__hora_inicio")
+    if es_medico:
+        if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
+            raise PermissionDenied
 
-    historial_turnos = paciente.turnos.all().order_by(
-        "-slot__fecha", "-slot__hora_inicio"
-    )
+    turnos_base = paciente.turnos.all()
+
+    if es_medico:
+
+        turnos_base = turnos_base.filter(slot__medico=request.user.perfil_medico)
+
+    proximos_turnos = turnos_base.filter(
+        slot__fecha__gte=timezone.now().date()
+    ).order_by("slot__fecha")
+
+    historial_turnos = turnos_base.filter(
+        slot__fecha__lt=timezone.now().date()
+    ).order_by("-slot__fecha")
+
+    context = {
+        "paciente": paciente,
+        "proximos_turnos": proximos_turnos,
+        "historial_turnos": historial_turnos,
+        "es_medico": es_medico,
+    }
+    return render(request, "agenda/paciente/detalle_paciente.html", context)
+
+
+@login_required
+def editar_historia(request, pk):
+    paciente = get_object_or_404(Paciente, pk=pk)
+
+    # Escudo: Solo el médico que lo atendió puede editar
+    if hasattr(request.user, "perfil_medico"):
+        if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
+            raise PermissionDenied
+    else:
+        # Si no es médico (es admin)
+        pass
+
+    if request.method == "POST":
+        form = HistoriaClinicaForm(request.POST, instance=paciente)
+        if form.is_valid():
+            # Lógica de la fecha: recuperamos el texto nuevo
+            nueva_nota = form.cleaned_data.get("historia_clinica")
+            fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
+
+            # Guardamos con el encabezado de fecha
+            paciente.historia_clinica = f"--- {fecha_str} ---\n{nueva_nota}\n\n"
+            paciente.save()
+
+            messages.success(request, "Evolución guardada.")
+            return redirect("agenda:detalle_paciente", paciente_id=paciente.id)
+    else:
+        form = HistoriaClinicaForm(instance=paciente)
 
     return render(
         request,
-        "agenda/paciente/detalle_paciente.html",
-        {
-            "paciente": paciente,
-            "proximos_turnos": proximos_turnos,
-            "historial_turnos": historial_turnos,
-        },
+        "agenda/paciente/editar_historia.html",
+        {"form": form, "paciente": paciente},
     )

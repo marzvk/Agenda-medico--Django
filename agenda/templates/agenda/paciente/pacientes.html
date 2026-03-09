@@ -4,9 +4,11 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-people-fill"></i> Gestión de Pacientes</h2>
+        {% if not es_medico %}
         <a href="{% url 'agenda:crear_paciente' %}" class="btn btn-success">
             <i class="bi bi-person-plus"></i> + Nuevo Paciente
         </a>
+        {% endif %}
     </div>
 
     {% if messages %}
@@ -62,17 +64,20 @@
                         <td>{{ p.telefono }}</td>
                         <td class="text-center">
                             <div class="d-flex justify-content-center gap-2">
-                            <a href="{% url 'agenda:editar_paciente' p.id %}" class="btn btn-sm btn-outline-secondary">
-                                    ✏️ Editar
-                                </a>
+                            
+                            {% if not es_medico %}
                             <form method="POST" style="display:inline;">
                                 {% csrf_token %}
+                                <a href="{% url 'agenda:editar_paciente' p.id %}" class="btn btn-sm btn-outline-secondary">
+                                    ✏️ Editar
+                                </a>
                                 <input type="hidden" name="paciente_id" value="{{ p.id }}">
                                 <button type="submit" name="borrar" class="btn btn-outline-danger btn-sm" 
                                         onclick="return confirm('¿Está seguro de eliminar a {{ p.nombre }} {{ p.apellido }}?')">
                                     <i class="bi bi-trash"></i> Borrar
                                 </button>                                
                             </form>
+                            {% endif %}
                             </div>
                         </td>
                     </tr>

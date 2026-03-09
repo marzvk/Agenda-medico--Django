@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
-from .models import Medico, DisponibilidadSemanal
+from .models import Medico, DisponibilidadSemanal, Paciente
 
 
 class DisponibilidadForm(forms.ModelForm):
@@ -38,6 +38,24 @@ class MedicoTiempoForm(forms.ModelForm):
                     "min": "15",
                     "max": "60",
                     "style": "width: 120px;",
+                }
+            ),
+        }
+
+
+# agenda/forms.py
+
+
+class HistoriaClinicaForm(forms.ModelForm):
+    class Meta:
+        model = Paciente
+        fields = ["historia_clinica"]
+        widgets = {
+            "historia_clinica": forms.Textarea(
+                attrs={
+                    "class": "form-control",
+                    "rows": 15,
+                    "placeholder": "Escriba la evolución del paciente...",
                 }
             ),
         }
