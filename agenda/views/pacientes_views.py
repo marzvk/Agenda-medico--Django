@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from agenda.forms import HistoriaClinicaForm
 
 
 class PacienteForm(forms.ModelForm):
@@ -128,27 +129,65 @@ def crear_paciente(request):
 @login_required
 def detalle_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
+    es_medico = hasattr(request.user, "perfil_medico")
 
-    if hasattr(request.user, "perfil_medico"):
+    if es_medico:
         if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
             raise PermissionDenied
 
-    hoy = timezone.now().date()
+    turnos_base = paciente.turnos.all()
 
-    proximos_turnos = paciente.turnos.filter(
-        slot__fecha__gte=hoy, estado=Turno.EstadoTurno.PROGRAMADO
-    ).order_by("slot__fecha", "slot__hora_inicio")
+    if es_medico:
 
-    historial_turnos = paciente.turnos.all().order_by(
-        "-slot__fecha", "-slot__hora_inicio"
-    )
+        turnos_base = turnos_base.filter(slot__medico=request.user.perfil_medico)
+
+    proximos_turnos = turnos_base.filter(
+        slot__fecha__gte=timezone.now().date()
+    ).order_by("slot__fecha")
+
+    historial_turnos = turnos_base.filter(
+        slot__fecha__lt=timezone.now().date()
+    ).order_by("-slot__fecha")
+
+    context = {
+        "paciente": paciente,
+        "proximos_turnos": proximos_turnos,
+        "historial_turnos": historial_turnos,
+        "es_medico": es_medico,
+    }
+    return render(request, "agenda/paciente/detalle_paciente.html", context)
+
+
+@login_required
+def editar_historia(request, pk):
+    paciente = get_object_or_404(Paciente, pk=pk)
+
+    # Escudo: Solo el médico que lo atendió puede editar
+    if hasattr(request.user, "perfil_medico"):
+        if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
+            raise PermissionDenied
+    else:
+        # Si no es médico (es admin)
+        pass
+
+    if request.method == "POST":
+        form = HistoriaClinicaForm(request.POST, instance=paciente)
+        if form.is_valid():
+            # Lógica de la fecha: recuperamos el texto nuevo
+            nueva_nota = form.cleaned_data.get("historia_clinica")
+            fecha_str = timezone.now().strftime("%d/%m/%Y %H:%M")
+
+            # Guardamos con el encabezado de fecha
+            paciente.historia_clinica = f"--- {fecha_str} ---\n{nueva_nota}\n\n"
+            paciente.save()
+
+            messages.success(request, "Evolución guardada.")
+            return redirect("agenda:detalle_paciente", paciente_id=paciente.id)
+    else:
+        form = HistoriaClinicaForm(instance=paciente)
 
     return render(
         request,
-        "agenda/paciente/detalle_paciente.html",
-        {
-            "paciente": paciente,
-            "proximos_turnos": proximos_turnos,
-            "historial_turnos": historial_turnos,
-        },
+        "agenda/paciente/editar_historia.html",
+        {"form": form, "paciente": paciente},
     )

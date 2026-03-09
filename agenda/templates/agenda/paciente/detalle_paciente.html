@@ -24,11 +24,40 @@
                     <p class="text-muted small">{{ paciente.email }}</p>
                 </div>
                 <div class="col-md-3 text-end">
-                     <a href="{% url 'agenda:editar_paciente' paciente.id %}" class="btn btn-sm btn-primary">Editar Datos</a>
-                </div>
+                {% if es_medico %}
+                    <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-medical"></i> Evolución Médica
+                    </a>
+                {% else %}
+                    <a href="{% url 'agenda:editar_paciente' paciente.id %}" class="btn btn-sm btn-primary">
+                        Editar Datos Personales
+                    </a>
+                {% endif %}
+            </div>
             </div>
         </div>
     </div>
+
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 text-success"><i class="bi bi-file-earmark-medical-fill"></i> Historia Clínica / Evoluciones</h5>
+            {% if es_medico %}
+            <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-plus-lg"></i> Agregar Evolución
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body bg-white p-4" style="max-height: 400px; overflow-y: auto;">
+            {% if paciente.historia_clinica %}
+                <div class="lh-base" style="white-space: pre-wrap;">{{ paciente.historia_clinica }}</div>
+            {% else %}
+                <p class="text-muted text-center my-3">No hay registros médicos cargados aún.</p>
+            {% endif %}
+        </div>
+    </div>
+   
+
+
 
     <h5 class="mb-3 text-primary"><i class="bi bi-calendar-event"></i> Próximos Turnos Programados</h5>
     <div class="card shadow-sm mb-4">

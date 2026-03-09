@@ -7,6 +7,7 @@ from .views.pacientes_views import (
     detalle_paciente,
     editar_paciente,
     crear_paciente,
+    editar_historia,
 )
 
 app_name = "agenda"
@@ -43,4 +44,5 @@ urlpatterns = [
     path("pacientes/nuevo/", crear_paciente, name="crear_paciente"),
     path("pacientes/editar/<int:pk>/", editar_paciente, name="editar_paciente"),
     path("paciente/<int:paciente_id>/", detalle_paciente, name="detalle_paciente"),
+    path("paciente/<int:pk>/historia/", editar_historia, name="editar_historia"),
 ]
