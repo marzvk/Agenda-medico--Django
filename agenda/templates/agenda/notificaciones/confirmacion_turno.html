@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; }
+    .card { max-width: 600px; margin: 30px auto; background: white;
+            border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { background-color: #198754; color: white;
+              padding: 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; line-height: 1.8; color: #333; }
+    .dato { background: #f8f9fa; padding: 12px 16px;
+            border-left: 4px solid #198754; margin: 8px 0; }
+    .dato strong { color: #198754; }
+    .footer { font-size: 12px; color: #999;
+              text-align: center; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>MedAgenda</h1>
+      <p>Confirmación de Turno</p>
+    </div>
+    <div class="content">
+      <p>Hola <strong>{{ paciente.nombre }}</strong>,</p>
+      <p>Tu turno fue confirmado exitosamente:</p>
+
+      <div class="dato">
+        <strong>Médico:</strong> Dr/a. {{ medico.nombre }} {{ medico.apellido }}
+      </div>
+      <div class="dato">
+        <strong>Especialidad:</strong> {{ medico.especialidad }}
+      </div>
+      <div class="dato">
+        <strong>Fecha:</strong> {{ turno.slot.fecha|date:"d/m/Y" }}
+      </div>
+      <div class="dato">
+        <strong>Horario:</strong> {{ turno.slot.hora_inicio|time:"H:i" }} hs
+      </div>
+
+      <p style="margin-top:24px;">
+        Por favor llegá 15 minutos antes.
+        {% if clinica_telefono %}
+          Si necesitás cancelar, llamanos al <strong>{{ clinica_telefono }}</strong>.
+        {% endif %}
+      </p>
+    </div>
+    <div class="footer">
+      Este es un mensaje automático. Por favor no respondas este correo.
+    </div>
+  </div>
+</body>
+</html>

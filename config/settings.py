@@ -32,6 +32,8 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "agenda.apps.AgendaConfig",
+    "django_celery_beat",
+    #
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -122,3 +124,36 @@ STATIC_URL = "static/"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "agenda:index"
 LOGOUT_REDIRECT_URL = "login"
+
+
+# ─── Celery ───────────────────────────────────────────
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+# Le dice a Celery que use Redis como broker
+# localhost:6379 es la dirección por defecto de Redis
+# /0 es la base de datos Redis (tiene 16, usamos la 0)
+
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+# Dónde guarda Celery el resultado de las tareas
+# Por ahora no lo usamos activamente pero es buena práctica configurarlo
+
+CELERY_TIMEZONE = "America/Argentina/Buenos_Aires"
+# Crítico: sin esto Beat programa las tareas en UTC
+# y el resumen de las 8am llegaría a las 5am
+
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# Le dice a Beat que guarde el schedule en la base de datos
+# Esto permite modificar horarios desde el admin de Django
+
+# ─── Email ────────────────────────────────────────────
+# Para desarrollo: imprime el mail en consola
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "MedAgenda <noreply@medagenda.com>"
+
+# Con SMTP real:
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.gmail.com"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = "tu@email.com"
+# EMAIL_HOST_PASSWORD = "tu_password"
+# DEFAULT_FROM_EMAIL = "MedAgenda <tu@email.com>"
