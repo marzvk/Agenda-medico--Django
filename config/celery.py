@@ -11,5 +11,6 @@ app = Celery("medagenda")
 # variables de Celery empiezan con CELERY_
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# Autodescubre tasks.py en todas las apps instaladas
+# Autodescubre tasks.py en todas las apps instaladas,
+# usa @shared_task de celery para saber
 app.autodiscover_tasks()
