@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; }
+    .card { max-width: 600px; margin: 30px auto; background: white;
+            border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { background-color: #343a40; color: white;
+              padding: 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; line-height: 1.8; color: #333; }
+    .resumen { display: flex; gap: 12px; margin: 20px 0; }
+    .stat { flex: 1; background: #f8f9fa; border-radius: 6px;
+            padding: 12px; text-align: center; }
+    .stat .numero { font-size: 28px; font-weight: bold; color: #343a40; }
+    .stat .label { font-size: 12px; color: #666; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background: #343a40; color: white; padding: 10px; text-align: left; }
+    td { padding: 10px; border-bottom: 1px solid #eee; }
+    tr:hover td { background: #f8f9fa; }
+    .sin-turnos { text-align: center; padding: 30px; color: #666; }
+    .footer { font-size: 12px; color: #999;
+              text-align: center; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>MedAgenda</h1>
+      <p>Agenda del día {{ fecha|date:"d/m/Y" }}</p>
+    </div>
+    <div class="content">
+      <p>Buenos días, <strong>Dr/a. {{ medico.nombre }} {{ medico.apellido }}</strong>.</p>
+
+      {% if sin_turnos %}
+        <div class="sin-turnos">
+          <p>No tenés turnos programados para hoy.</p>
+        </div>
+      {% else %}
+        <div class="resumen">
+          <div class="stat">
+            <div class="numero">{{ total_turnos }}</div>
+            <div class="label">Turnos</div>
+          </div>
+          <div class="stat">
+            <div class="numero">{{ primer_turno.slot.hora_inicio|time:"H:i" }}</div>
+            <div class="label">Primer turno</div>
+          </div>
+          <div class="stat">
+            <div class="numero">{{ tiempo_horas }}h {{ tiempo_minutos }}m</div>
+            <div class="label">Tiempo total</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Horario</th>
+              <th>Paciente</th>
+              <th>Duración</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for turno in turnos %}
+            <tr>
+              <td>{{ turno.slot.hora_inicio|time:"H:i" }} hs</td>
+              <td>{{ turno.paciente.apellido }}, {{ turno.paciente.nombre }}</td>
+              <td>
+                {{ turno.slot.hora_inicio|time:"H:i" }} -
+                {{ turno.slot.hora_fin|time:"H:i" }}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+    <div class="footer">
+      Este es un mensaje automático de MedAgenda.
+    </div>
+  </div>
+</body>
+</html>

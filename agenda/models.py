@@ -48,6 +48,22 @@ class Medico(Persona):
     tiempo_consulta = models.PositiveIntegerField(
         default=30, verbose_name="Duracion de consulta (minutos)"
     )
+    # Notificaciones Medico
+    hora_resumen_diario = models.TimeField(
+        default="08:00",
+        verbose_name="Hora de resumen diario",
+        help_text="Hora que el medico recibe su agenda del dia",
+    )
+    horas_recordatorio_paciente = models.IntegerField(
+        default=24,
+        verbose_name="Recordatorio al paciente (horas antes)",
+        help_text="Horas antes del turno avisar al paciente",
+    )
+    notificaciones_activas = models.BooleanField(
+        default=True,
+        verbose_name="Notificaciones activas",
+        help_text="Si es False, no se envia mail",
+    )
 
 
 class Paciente(Persona):
