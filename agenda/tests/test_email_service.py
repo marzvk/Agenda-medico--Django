@@ -16,7 +16,7 @@ class EmailServiceTestCase(TestCase):
     """Datos para usar en los tests"""
 
     def setUp(self):
-        print("ejecutando setUp //////////////////////////////////////")
+
         self.user = User.objects.create_user(username="dr_test", password="test1234")
 
         self.medico = Medico.objects.create(
@@ -90,3 +90,79 @@ class TestEnviarConfirmacionTurno(EmailServiceTestCase):
         """La función retorna True cuando el mail se envía correctamente."""
         resultado = enviar_confirmacion_turno(self.turno)
         self.assertTrue(resultado)
+
+
+# RECORDATORIO TURNO
+class TestEnviarRecordatorioTurno(EmailServiceTestCase):
+
+    def test_mail_se_envia_para_turno_programado(self):
+        "El recordatorio llega si el turno etsa programado"
+        enviar_recordatorio_turno(self.turno.id)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("paciente@test.com", mail.outbox[0].to)
+
+    def test_no_se_envia_para_turno_cancelado(self):
+        """
+        Si el turno fue cancelado después de programar el recordatorio,
+        no se manda el mail. Este es el caso donde el eta ya estaba
+        en Redis pero el turno se canceló antes de ejecutarse.
+        """
+        self.turno.estado = Turno.EstadoTurno.CANCELADO
+        self.turno.save()
+
+        enviar_recordatorio_turno(self.turno.id)
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_no_se_envia_para_turno_inexistente(self):
+        """Si el turno fue borrado, no falla, simplemente no manda nada."""
+        enviar_recordatorio_turno(99999)
+
+        self.assertEqual(len(mail.outbox), 0)
+
+
+# RESUMEN PARA EL MEDICO
+class TestEnviarResumenDiario(EmailServiceTestCase):
+
+    def test_mail_se_envia_al_medico(self):
+        """El resumen diario llega al email del médico."""
+        enviar_resumen_diario(self.medico.id)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("medico@test.com", mail.outbox[0].to)
+
+    def test_asunto_contiene_cantidad_turnos(self):
+        """El asunto indica cuántos turnos tiene el día."""
+        enviar_resumen_diario(self.medico.id)
+
+        self.assertIn("1 turnos", mail.outbox[0].subject)
+
+    def test_se_envia_aunque_no_haya_turnos(self):
+        """
+        Si no hay turnos el médico igual recibe un mail avisando.
+        Es mejor que no recibir nada y no saber si el sistema funciona.
+        """
+        # Borramos el turno para simular día sin turnos
+        self.turno.delete()
+
+        enviar_resumen_diario(self.medico.id)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("medico@test.com", mail.outbox[0].to)
+
+    def test_no_se_envia_si_notificaciones_desactivadas(self):
+        """Si el médico apagó las notificaciones, no llega nada."""
+        self.medico.notificaciones_activas = False
+        self.medico.save()
+
+        enviar_resumen_diario(self.medico.id)
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_no_se_envia_para_medico_inexistente(self):
+        """Si el médico no existe, no falla, simplemente retorna False."""
+        resultado = enviar_resumen_diario(99999)
+
+        self.assertFalse(resultado)
+        self.assertEqual(len(mail.outbox), 0)
