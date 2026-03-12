@@ -108,6 +108,8 @@ def reservar_turno(request, slot_id):
     )
 
 
+#
+@login_required
 def marcar_asistido(request, turno_id):
     turno = get_object_or_404(Turno, id=turno_id)
     turno.estado = "AS"
@@ -185,6 +187,8 @@ def lista_turnos(request):
     return render(request, "agenda/turnos/lista_turnos.html", context)
 
 
+#
+@login_required
 def cancelar_turno(request, turno_id):
 
     turno = get_object_or_404(Turno, id=turno_id)

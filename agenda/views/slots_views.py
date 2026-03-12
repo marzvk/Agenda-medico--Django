@@ -7,12 +7,15 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from datetime import timedelta, datetime, time
 from django.db import transaction
+from django.core.exceptions import PermissionDenied
 
 
-# @login_required
-
-
+#
+@login_required
 def generar_agenda(request, medico_id):
+    # Solo secretaria puede generar agenda
+    if hasattr(request.user, "perfil_medico"):
+        raise PermissionDenied
     medico = get_object_or_404(Medico, id=medico_id)
     hoy = timezone.localdate()
 
@@ -128,7 +131,12 @@ def generar_agenda(request, medico_id):
     return render(request, "agenda/medicos/generar_agenda.html", context)
 
 
+#
+@login_required
 def crear_slot_manual(request, medico_id):
+    # Solo secretaria puede crear slots
+    if hasattr(request.user, "perfil_medico"):
+        raise PermissionDenied
     medico = get_object_or_404(Medico, id=medico_id)
 
     if request.method == "POST":
