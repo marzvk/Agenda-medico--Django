@@ -183,3 +183,34 @@ class TestUsuarioNoLogueado(RBACTestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertIn("/login", response.url)
+
+
+class TestSlotManual(RBACTestCase):
+
+    def test_medico_puede_crear_slot_en_su_propia_agenda(self):
+        self.client.login(username="medico_a", password="pass123")
+        response = self.client.post(
+            reverse("agenda:crear_slot_manual", args=[self.medico_a.id]),
+            {
+                "fecha": date.today(),
+                "hora_inicio": "15:00",
+                "hora_fin": "15:30",
+            },
+        )
+        # Redirige porque el slot se creó correctamente
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            Slot.objects.filter(medico=self.medico_a, hora_inicio="15:00").exists()
+        )
+
+    def test_medico_no_puede_crear_slot_en_agenda_ajena(self):
+        self.client.login(username="medico_a", password="pass123")
+        response = self.client.post(
+            reverse("agenda:crear_slot_manual", args=[self.medico_b.id]),
+            {
+                "fecha": date.today(),
+                "hora_inicio": "15:00",
+                "hora_fin": "15:30",
+            },
+        )
+        self.assertEqual(response.status_code, 403)
