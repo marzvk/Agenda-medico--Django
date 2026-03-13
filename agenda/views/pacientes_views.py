@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from agenda.forms import HistoriaClinicaForm
+from agenda.utils import user_es_medico
 
 
 class PacienteForm(forms.ModelForm):
@@ -48,7 +49,7 @@ class PacienteForm(forms.ModelForm):
 @login_required
 def lista_pacientes(request):
     query = request.GET.get("q", "")
-    es_medico = hasattr(request.user, "perfil_medico")
+    es_medico = user_es_medico(request.user)
 
     # 1. Seguridad en la Acción de Borrar
     if request.method == "POST" and "borrar" in request.POST:
@@ -89,7 +90,7 @@ def lista_pacientes(request):
 def editar_paciente(request, pk):
     paciente = get_object_or_404(Paciente, pk=pk)
 
-    if hasattr(request.user, "perfil_medico"):
+    if user_es_medico(request.user):
         if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
             raise PermissionDenied
 
@@ -110,7 +111,7 @@ def editar_paciente(request, pk):
 
 @login_required
 def crear_paciente(request):
-    if hasattr(request.user, "perfil_medico"):
+    if user_es_medico(request.user):
         raise PermissionDenied
 
     form = PacienteForm(request.POST or None)
@@ -130,7 +131,7 @@ def crear_paciente(request):
 @login_required
 def detalle_paciente(request, paciente_id):
     paciente = get_object_or_404(Paciente, id=paciente_id)
-    es_medico = hasattr(request.user, "perfil_medico")
+    es_medico = user_es_medico(request.user)
 
     if es_medico:
         if not paciente.turnos.filter(slot__medico=request.user.perfil_medico).exists():
@@ -165,7 +166,7 @@ def editar_historia(request, pk):
     paciente = get_object_or_404(Paciente, pk=pk)
 
     # Solo médicos pueden editar historia clínica
-    if not hasattr(request.user, "perfil_medico"):
+    if not user_es_medico(request.user):
         raise PermissionDenied
 
     # Escudo: solo el médico que lo atendió

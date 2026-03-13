@@ -131,12 +131,17 @@ def generar_agenda(request, medico_id):
     return render(request, "agenda/medicos/generar_agenda.html", context)
 
 
-#
+# SLOT INDIVIDUAL
+
+
 @login_required
 def crear_slot_manual(request, medico_id):
-    # Solo secretaria puede crear slots
-    if hasattr(request.user, "perfil_medico"):
-        raise PermissionDenied
+    from agenda.utils import user_es_medico
+
+    if user_es_medico(request.user):
+        if request.user.perfil_medico.id != medico_id:
+            raise PermissionDenied
+
     medico = get_object_or_404(Medico, id=medico_id)
 
     if request.method == "POST":

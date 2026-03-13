@@ -6,6 +6,8 @@ from agenda.services.turno_service import TurnoService
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
+from agenda.utils import user_es_medico
+from django.core.exceptions import PermissionDenied
 
 
 def index(request):
@@ -20,7 +22,7 @@ def lista_slots(request):
     hoy = date.today()
 
     # 1. Identificar si es Médico y definir el QuerySet base
-    es_medico = hasattr(request.user, "perfil_medico")
+    es_medico = user_es_medico(request.user)
 
     if es_medico:
         medico_actual = request.user.perfil_medico
@@ -80,6 +82,8 @@ def lista_slots(request):
 # TURNO RESERVA
 @login_required
 def reservar_turno(request, slot_id):
+    if user_es_medico(request.user):
+        raise PermissionDenied
 
     slot = get_object_or_404(Slot, id=slot_id)
     if not slot.disponible:
@@ -111,6 +115,8 @@ def reservar_turno(request, slot_id):
 #
 @login_required
 def marcar_asistido(request, turno_id):
+    if user_es_medico(request.user):
+        raise PermissionDenied
     turno = get_object_or_404(Turno, id=turno_id)
     turno.estado = "AS"
     turno.notas = request.POST.get("notas", "")
@@ -151,7 +157,7 @@ def lista_turnos(request):
         .exclude(estado=Turno.EstadoTurno.CANCELADO)
         .order_by("slot__fecha", "slot__hora_inicio")
     )
-    es_medico = hasattr(request.user, "perfil_medico")
+    es_medico = user_es_medico(request.user)
 
     if es_medico:
         # Si es médico, forzamos que solo vea LO SUYO
@@ -190,6 +196,9 @@ def lista_turnos(request):
 #
 @login_required
 def cancelar_turno(request, turno_id):
+
+    if user_es_medico(request.user):
+        raise PermissionDenied
 
     turno = get_object_or_404(Turno, id=turno_id)
     medico_id = turno.slot.medico.id

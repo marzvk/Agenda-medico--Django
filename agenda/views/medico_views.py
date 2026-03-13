@@ -6,6 +6,8 @@ from django.utils import timezone
 from django.db.models import Q, Count, Max
 from agenda.forms import DisponibilidadFormSet, MedicoTiempoForm
 from django.contrib import messages
+from agenda.utils import user_es_medico
+from django.core.exceptions import PermissionDenied
 
 
 @login_required
@@ -29,6 +31,10 @@ def agenda_medico(request, medico_id):
 
     medico = get_object_or_404(Medico, pk=medico_id)
 
+    if user_es_medico(request.user):
+        if request.user.perfil_medico.id != medico_id:
+            raise PermissionDenied
+
     semanas = int(request.GET.get("semanas", 1))
 
     hoy = date.today()
@@ -49,6 +55,10 @@ def agenda_medico(request, medico_id):
 
 @login_required
 def gestionar_disponibilidad(request, medico_id):
+
+    if user_es_medico(request.user):
+        raise PermissionDenied
+
     medico = get_object_or_404(Medico, id=medico_id)
 
     if request.method == "POST":
