@@ -144,3 +144,26 @@ def enviar_resumen_diario(medico_id):
         context=context,
         recipient_list=[medico.email],
     )
+
+
+# MANDAR MAIL ACTIVACION
+def enviar_activacion_cuenta(usuario, token):
+    """Mail al usuario recién creado con el link de activación.
+    El link contiene el token UUID que la vista va a verificar."""
+    from django.conf import settings
+
+    base_url = getattr(settings, "BASE_URL", "http://127.0.0.1:8000")
+    link = f"{base_url}/accounts/activar/{token.token}/"
+
+    context = {
+        "usuario": usuario,
+        "link": link,
+        "horas_expiracion": 72,
+    }
+
+    return enviar_email_html(
+        subject="Activa tu cuenta en MedAgenda",
+        template_name="agenda/notificaciones/activacion_cuenta.html",
+        context=context,
+        recipient_list=[usuario.email],
+    )

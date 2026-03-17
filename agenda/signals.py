@@ -76,7 +76,7 @@ def usuario_post_save(sender, instance, created, **kwargs):
         return
 
     # superuser no necesita mail de activacion
-    if instance.is_superuser:
+    if instance.is_active and instance.is_superuser:
         return
 
     from agenda.notifications.email_service import enviar_activacion_cuenta
