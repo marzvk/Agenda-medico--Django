@@ -5,6 +5,7 @@ from django.utils import timezone
 from django import forms
 from agenda.models import TokenVerificacion
 from agenda.utils import user_es_medico, user_es_secretaria
+from django.contrib.auth.decorators import login_required
 
 
 class EstablecerContrasenaForm(forms.Form):
@@ -85,3 +86,17 @@ def activar_cuenta(request, token):
         "agenda/registro/activar_cuenta.html",
         {"form": form, "usuario": usuario},
     )
+
+
+@login_required
+def cuenta_pendiente(request):
+    """
+    Vista que ve el usuario sin rol mientras
+    el admin completa su configuración.
+    """
+    # Si ya tiene rol no debería estar acá
+    # lo mandamos al inicio
+    if user_es_medico(request.user) or user_es_secretaria(request.user):
+        return redirect("agenda:index")
+
+    return render(request, "agenda/registro/cuenta_pendiente.html")
