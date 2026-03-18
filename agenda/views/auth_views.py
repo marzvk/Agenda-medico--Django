@@ -51,7 +51,7 @@ def activar_cuenta(request, token):
     except TokenVerificacion.DoesNotExist:
         return render(request, "agenda/registro/token_invalido.html")
 
-    if token_obj.esta_expirado:  # si expiro, se elimina ya no sirve
+    if token_obj.esta_expirado():  # si expiro, se elimina ya no sirve
         token_obj.delete()
         return render(request, "agenda/registro/token_expirado.html")
 

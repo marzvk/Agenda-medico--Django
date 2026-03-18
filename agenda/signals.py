@@ -76,20 +76,18 @@ def usuario_post_save(sender, instance, created, **kwargs):
         return
 
     # superuser no necesita mail de activacion
-    if instance.is_active and instance.is_superuser:
+    if instance.is_superuser:
         return
 
-    from agenda.notifications.email_service import enviar_activacion_cuenta
-
-    # cuenta desactivada hasta confirmar el mail
-    instance.is_active = False
-    instance.save(update_fields=["is_active"])
+    User.objects.filter(pk=instance.pk).update(is_active=False)
 
     # generacion token
     token = TokenVerificacion.objects.create(
         usuario=instance,
         tipo=TokenVerificacion.TIPO_ACTIVACION,
     )
+
+    from agenda.notifications.email_service import enviar_activacion_cuenta
 
     enviar_activacion_cuenta(instance, token)
     logger.info(f"Mail de activacion enviado a {instance.email}")
