@@ -167,3 +167,39 @@ def enviar_activacion_cuenta(usuario, token):
         context=context,
         recipient_list=[usuario.email],
     )
+
+
+def enviar_aviso_usuario_sin_rol(usuario):
+    """
+    Mail al superusuario avisando que un usuario activó
+    su cuenta pero no tiene rol asignado todavía.
+    Se manda una sola vez cuando el usuario activa la cuenta.
+    """
+    from django.contrib.auth.models import User
+    from django.conf import settings
+
+    # Buscamos todos los superusuarios para notificarlos
+    admins = User.objects.filter(is_superuser=True, email__isnull=False).exclude(
+        email=""
+    )
+
+    if not admins.exists():
+        logger.warning("No hay superusuarios con email para notificar")
+        return False
+
+    base_url = getattr(settings, "BASE_URL", "http://127.0.0.1:8000")
+    url_admin = f"{base_url}/admin/auth/user/{usuario.id}/change/"
+
+    context = {
+        "usuario": usuario,
+        "url_admin": url_admin,
+    }
+
+    destinatarios = list(admins.values_list("email", flat=True))
+
+    return enviar_email_html(
+        subject=f"Usuario {usuario.username} activó su cuenta y espera configuración",
+        template_name="agenda/notificaciones/aviso_usuario_sin_rol.html",
+        context=context,
+        recipient_list=destinatarios,
+    )

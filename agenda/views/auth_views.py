@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django import forms
 from agenda.models import TokenVerificacion
+from agenda.utils import user_es_medico, user_es_secretaria
 
 
 class EstablecerContrasenaForm(forms.Form):
@@ -64,8 +65,14 @@ def activar_cuenta(request, token):
             usuario.set_password(form.cleaned_data["password1"])
             usuario.is_active = True
             usuario.save()
-
             token_obj.delete()
+
+            if not user_es_medico(usuario) and not user_es_secretaria(usuario):
+                from agenda.notifications.email_service import (
+                    enviar_aviso_usuario_sin_rol,
+                )
+
+                enviar_aviso_usuario_sin_rol(usuario)
 
             messages.success(request, "Cuenta activada correctamente. Inicie sesión.")
             return redirect("login")

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; background: #f4f4f4; }
+    .card { max-width: 600px; margin: 30px auto; background: white;
+            border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header { background-color: #ffc107; color: #333;
+              padding: 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; }
+    .content { padding: 30px; line-height: 1.8; color: #333; }
+    .btn { display: inline-block; background: #198754; color: white;
+           padding: 12px 30px; border-radius: 6px; text-decoration: none;
+           font-weight: bold; margin: 20px 0; }
+    .footer { font-size: 12px; color: #999;
+              text-align: center; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>MedAgenda</h1>
+      <p>Usuario pendiente de configuración</p>
+    </div>
+    <div class="content">
+      <p>El usuario <strong>{{ usuario.username }}</strong> activó su cuenta.</p>
+      <p>Email: <strong>{{ usuario.email }}</strong></p>
+      <p>Todavía no tiene rol asignado en el sistema. Necesitás completar su configuración:</p>
+      <ul>
+        <li>Si es <strong>Secretaria</strong>: verificá que esté en el grupo Secretaria.</li>
+        <li>Si es <strong>Médico</strong>: creá su perfil en el admin vinculando este usuario.</li>
+      </ul>
+      <div style="text-align: center;">
+        <a href="{{ url_admin }}" class="btn">Ir al usuario en el admin</a>
+      </div>
+    </div>
+    <div class="footer">
+      Este es un mensaje automático de MedAgenda.
+    </div>
+  </div>
+</body>
+</html>
