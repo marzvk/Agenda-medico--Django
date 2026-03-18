@@ -43,3 +43,38 @@ def activar_cuenta(request, token):
     y que no haya expirado.
     Si todo está bien muestra el formulario de contraseña.
     """
+    try:
+        token_obj = TokenVerificacion.objects.select_related("usuario").get(
+            token=token,
+            tipo=TokenVerificacion.TIPO_ACTIVACION,
+        )
+    except TokenVerificacion.DoesNotExist:
+        return render(request, "agenda/registro/token_invalido.html")
+
+    if token_obj.esta_expirado:  # si expiro, se elimina ya no sirve
+        token_obj.delete()
+        return render(request, "agenda/registro/token_expirado.html")
+
+    usuario = token_obj.usuario
+
+    if request.method == "POST":
+        form = EstablecerContrasenaForm(request.POST)
+        if form.is_valid():
+            # set_password hashea la contraseña
+            usuario.set_password(form.cleaned_data["password1"])
+            usuario.is_active = True
+            usuario.save()
+
+            token_obj.delete()
+
+            messages.success(request, "Cuenta activada correctamente. Inicie sesión.")
+            return redirect("login")
+
+    else:
+        form = EstablecerContrasenaForm()
+
+    return render(
+        request,
+        "agenda/registro/activar_cuenta.html",
+        {"form": form, "usuario": usuario},
+    )
