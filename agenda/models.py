@@ -197,10 +197,6 @@ class TokenVerificacion(models.Model):
         from django.utils import timezone
 
         ahora = timezone.now()
-        print(f"AHORA: {ahora}")
-        print(f"CREADO: {self.creado_en}")
-        print(f"LIMITE: {self.creado_en + timedelta(hours=72)}")
-        print(f"EXPIRADO: {ahora > self.creado_en + timedelta(hours=72)}")
 
         if self.tipo == self.TIPO_ACTIVACION:
             return ahora > self.creado_en + timedelta(hours=72)
