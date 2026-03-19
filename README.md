@@ -39,18 +39,83 @@ Sistema de gestión de turnos médicos con notificaciones automáticas por email
 
 ---
 
-## Seguridad
+## Seguridad y autenticación
 
 - RBAC: control de acceso basado en roles (Médicos y Secretarias).
 - Los médicos solo acceden a sus propios pacientes y turnos.
 - Protección a nivel de objeto con `PermissionDenied` en vistas de detalle y edición.
 - Vista `editar_historia` exclusiva para médicos con inserción automática de fecha y hora.
+- Los usuarios son creados por el administrador y reciben un mail de activación.
+- El usuario elige su propia contraseña al activar la cuenta.
+- El link de activación expira a las 72 horas.
+- Los usuarios sin rol asignado son bloqueados por middleware hasta que el admin complete su perfil.
+- La recuperación de contraseña genera un token con expiración de 1 hora.
+
+---
+
+## Roles del sistema
+
+- **Administrador:** acceso total, gestiona usuarios y configuración del sistema.
+- **Secretaria:** carga turnos, gestiona pacientes, genera slots y agenda.
+- **Médico:** accede solo a su propia agenda, pacientes y puede editar historias clínicas.
+
+---
+
+## Configuración inicial
+
+Instalás las dependencias:
+```bash
+pip install -r requirements.txt
+```
+
+Creás el archivo `.env` en la raíz del proyecto:
+```
+EMAIL_HOST_USER=tu_cuenta@gmail.com
+EMAIL_HOST_PASSWORD=tu_app_password
+```
+
+`EMAIL_HOST_PASSWORD` no es tu contraseña de Gmail sino una contraseña de aplicación
+generada por Google. Para obtenerla:
+
+1. Entrás a myaccount.google.com
+2. Seguridad → Verificación en dos pasos (tiene que estar activada)
+3. Contraseñas de aplicaciones
+4. Seleccionás "Correo" y "Otro dispositivo", escribís "MedAgenda"
+5. Google genera una contraseña de 16 caracteres que pegás acá
+
+Aplicás las migraciones:
+```bash
+python manage.py migrate
+```
+
+Creás el superusuario:
+```bash
+python manage.py createsuperuser
+```
+
+Creás el grupo Secretaria desde el admin de Django en `Autenticación y Autorización → Grupos`.
+
+---
+
+## Correr el sistema
+
+El sistema requiere tres procesos simultáneos en terminales separadas:
+```bash
+# Terminal 1
+python manage.py runserver
+
+# Terminal 2
+celery -A config worker --loglevel=info
+
+# Terminal 3
+celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+```
 
 ---
 
 ## Stack
 
 - Python / Django
-- SQLite
+- SQLite (desarrollo) / PostgreSQL (producción)
 - Celery + Redis
 - django-celery-beat
