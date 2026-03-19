@@ -19,9 +19,10 @@ from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from agenda.views.auth_views import activar_cuenta, cuenta_pendiente
-
+from django.views.generic import RedirectView
 
 urlpatterns = [
+    path("", RedirectView.as_view(url="/accounts/login/"), name="home"),
     path("admin/", admin.site.urls),
     path("agenda/", include("agenda.urls")),
     path(
