@@ -54,6 +54,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "agenda.middleware.RolRequeridoMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -161,3 +162,5 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = f"MedAgenda <{os.getenv('EMAIL_HOST_USER')}>"
+
+BASE_URL = "http://127.0.0.1:8000"

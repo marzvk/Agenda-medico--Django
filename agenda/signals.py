@@ -3,6 +3,9 @@ import logging
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from django.contrib.auth.models import User
+from agenda.models import TokenVerificacion
+
 
 logger = logging.getLogger(__name__)
 
@@ -59,3 +62,32 @@ def medico_post_delete(sender, instance, **kwargs):
         logger.info(f"Tarea Beat eliminada para médico {instance.id}")
     except Exception as e:
         logger.error(f"Error eliminando tarea Beat para médico {instance.id}: {e}")
+
+
+#
+@receiver(post_save, sender=User)
+def usuario_post_save(sender, instance, created, **kwargs):
+    """
+    Se dispara cuando se crea un usuario nuevo.
+    Solo actúa en la creación (created=True), no en modificaciones.
+    Genera el token y manda el mail de activación.
+    """
+    if not created:
+        return
+
+    # superuser no necesita mail de activacion
+    if instance.is_superuser:
+        return
+
+    User.objects.filter(pk=instance.pk).update(is_active=False)
+
+    # generacion token
+    token = TokenVerificacion.objects.create(
+        usuario=instance,
+        tipo=TokenVerificacion.TIPO_ACTIVACION,
+    )
+
+    from agenda.notifications.email_service import enviar_activacion_cuenta
+
+    enviar_activacion_cuenta(instance, token)
+    logger.info(f"Mail de activacion enviado a {instance.email}")

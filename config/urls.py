@@ -18,6 +18,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
+from agenda.views.auth_views import activar_cuenta, cuenta_pendiente
 
 
 urlpatterns = [
@@ -29,4 +30,6 @@ urlpatterns = [
         name="login",
     ),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("accounts/activar/<uuid:token>/", activar_cuenta, name="activar_cuenta"),
+    path("accounts/pendiente/", cuenta_pendiente, name="cuenta_pendiente"),
 ]

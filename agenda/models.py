@@ -2,6 +2,7 @@ from django.db import models
 from datetime import date, timedelta
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
+import uuid
 
 
 class Persona(models.Model):
@@ -146,3 +147,58 @@ class Slot(models.Model):
 
     def __str__(self):
         return f"{self.medico} {self.fecha} {self.hora_inicio}-{self.hora_fin}"
+
+
+# MODELO PARA ALMACENAR LOS TOKENS
+class TokenVerificacion(models.Model):
+
+    TIPO_ACTIVACION = "activacion"
+    TIPO_RECUPERACION = "recuperacion"
+
+    TIPO_CHOICES = [
+        (TIPO_ACTIVACION, "Activacion de cuenta"),
+        (TIPO_RECUPERACION, "Recuperacion de contraseña"),
+    ]
+
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="tokens_verificacion",
+    )
+
+    token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        editable=False,
+    )
+
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_CHOICES,
+        default=TIPO_ACTIVACION,
+    )
+
+    class Meta:
+        verbose_name = "Token de verificacion"
+        verbose_name_plural = "Tokens de verificacion"
+
+    def __str__(self):
+        return f"{self.tipo} - {self.usuario.username}"
+
+    def esta_expirado(self):
+        """
+        Calcula si el token expiró comparando
+        la hora actual con la hora de creación.
+        Activación: 72 horas.
+        Recuperación: 1 hora.
+        """
+        from django.utils import timezone
+
+        ahora = timezone.now()
+
+        if self.tipo == self.TIPO_ACTIVACION:
+            return ahora > self.creado_en + timedelta(hours=72)
+
+        return ahora > self.creado_en + timedelta(hours=1)
