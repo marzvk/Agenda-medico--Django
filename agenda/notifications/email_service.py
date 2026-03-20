@@ -169,6 +169,7 @@ def enviar_activacion_cuenta(usuario, token):
     )
 
 
+#
 def enviar_aviso_usuario_sin_rol(usuario):
     """
     Mail al superusuario avisando que un usuario activó
@@ -202,4 +203,29 @@ def enviar_aviso_usuario_sin_rol(usuario):
         template_name="agenda/notificaciones/aviso_usuario_sin_rol.html",
         context=context,
         recipient_list=destinatarios,
+    )
+
+
+#
+def enviar_recuperacion_contrasena(usuario, token):
+    """
+    Mail al usuario con el link para recuperar su contraseña.
+    El link expira en 1 hora.
+    """
+    from django.conf import settings
+
+    base_url = getattr(settings, "BASE_URL", "http://127.0.0.1:8000")
+    link = f"{base_url}/accounts/recuperar/{token.token}/"
+
+    context = {
+        "usuario": usuario,
+        "link": link,
+        "horas_expiracion": 1,
+    }
+
+    return enviar_email_html(
+        subject="Recuperación de contraseña - MedAgenda",
+        template_name="agenda/notificaciones/recuperacion_de_contrasena.html",
+        context=context,
+        recipient_list=[usuario.email],
     )

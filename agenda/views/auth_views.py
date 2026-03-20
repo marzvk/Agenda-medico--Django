@@ -100,3 +100,102 @@ def cuenta_pendiente(request):
         return redirect("agenda:index")
 
     return render(request, "agenda/registro/cuenta_pendiente.html")
+
+
+# RECUPERACION CUENTA EMAIL
+class SolicitarRecuperacionForm(forms.Form):
+    email = forms.EmailField(
+        label="Email",
+        widget=forms.EmailInput(attrs={"class": "form-control"}),
+    )
+
+
+def solicitar_recuperacion(request):
+    """Vista donde el usuario ingresa su email.
+    Si existe en la base de datos manda el mail con el link."""
+
+    if request.method == "POST":
+        form = SolicitarRecuperacionForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data["email"]
+
+            try:
+                usuario = User.objects.get(email=email, is_active=True)
+
+                TokenVerificacion.objects.filter(
+                    usuario=usuario,
+                    tipo=TokenVerificacion.TIPO_RECUPERACION,
+                ).delete()
+
+                token = TokenVerificacion.objects.create(
+                    usuario=usuario,
+                    tipo=TokenVerificacion.TIPO_RECUPERACION,
+                )
+
+                from agenda.notifications.email_service import (
+                    enviar_recuperacion_contrasena,
+                )
+
+                enviar_recuperacion_contrasena(usuario, token)
+
+            except User.DoesNotExist:
+                pass
+
+            messages.success(
+                request,
+                "Si ese mail esta registrado vas a recibir instrucciones para ingresar.",
+            )
+            return redirect("login")
+
+    else:
+        form = SolicitarRecuperacionForm()
+
+    return render(
+        request,
+        "agenda/registro/solicitar_recuperacion.html",
+        {"form": form},
+    )
+
+
+#
+def recuperar_contrasena(request, token):
+    """
+    Vista que recibe el token del link mandado por el mail.
+    Reutilizamos EstablecerContrasenaForm que ya existe.
+    La lógica es casi idéntica a activar_cuenta pero
+    no activa el usuario, solo cambia la contraseña.
+    """
+    try:
+        token_obj = TokenVerificacion.objects.select_related("usuario").get(
+            token=token,
+            tipo=TokenVerificacion.TIPO_RECUPERACION,
+        )
+    except TokenVerificacion.DoesNotExist:
+        return render(request, "agenda/registro/token_invalido.html")
+
+    if token_obj.esta_expirado():
+        token_obj.delete()
+        return render(request, "agenda/registro/token_expirado.html")
+
+    usuario = token_obj.usuario
+
+    if request.method == "POST":
+        form = EstablecerContrasenaForm(request.POST)
+        if form.is_valid():
+            usuario.set_password(form.cleaned_data["password1"])
+            usuario.save()
+            token_obj.delete()
+
+            messages.success(
+                request,
+                "Contraseña actualizada correctamente. Ya podés iniciar sesión.",
+            )
+            return redirect("login")
+    else:
+        form = EstablecerContrasenaForm()
+
+    return render(
+        request,
+        "agenda/registro/recuperar_contrasena.html",
+        {"form": form, "usuario": usuario},
+    )

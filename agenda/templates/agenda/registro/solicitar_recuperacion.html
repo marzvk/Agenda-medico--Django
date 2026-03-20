@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm mx-auto" style="max-width: 500px;">
+    <div class="card-header bg-danger text-white">
+      <h3 class="h5 mb-0">Recuperar contraseña</h3>
+    </div>
+    <div class="card-body">
+      <p class="text-muted">Ingresá tu email y te enviaremos las instrucciones.</p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          {{ form.email }}
+        </div>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-danger">Enviar instrucciones</button>
+        </div>
+      </form>
+      <div class="text-center mt-3">
+        <a href="{% url 'login' %}" class="text-muted small">Volver al login</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

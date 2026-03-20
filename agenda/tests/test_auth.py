@@ -193,3 +193,83 @@ class TestMiddlewareRol(TestCase):
         response = self.client.get(f"/accounts/activar/{uuid.uuid4()}/")
         # Devuelve 200 con token inválido, no redirige a cuenta_pendiente
         self.assertEqual(response.status_code, 200)
+
+
+class TestRecuperacionContrasena(TestCase):
+
+    def setUp(self):
+        post_save.disconnect(usuario_post_save, sender=User)
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username="test_recuperacion",
+            email="recuperacion@test.com",
+            password="pass1234",
+            is_active=True,
+        )
+
+    def tearDown(self):
+        post_save.connect(usuario_post_save, sender=User)
+
+    def test_token_recuperacion_valido_muestra_formulario(self):
+        """Token válido muestra el formulario de nueva contraseña."""
+        token = TokenVerificacion.objects.create(
+            usuario=self.user,
+            tipo=TokenVerificacion.TIPO_RECUPERACION,
+        )
+        response = self.client.get(reverse("recuperar_contrasena", args=[token.token]))
+        self.assertEqual(response.status_code, 200)
+
+    def test_token_recuperacion_expirado(self):
+        """Token expirado muestra vista de expirado y se borra."""
+        token = TokenVerificacion.objects.create(
+            usuario=self.user,
+            tipo=TokenVerificacion.TIPO_RECUPERACION,
+        )
+        TokenVerificacion.objects.filter(pk=token.pk).update(
+            creado_en=timezone.now() - timedelta(hours=2)
+        )
+        token.refresh_from_db()
+
+        response = self.client.get(reverse("recuperar_contrasena", args=[token.token]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(TokenVerificacion.objects.filter(pk=token.pk).exists())
+
+    def test_cambio_contrasena_exitoso(self):
+        """Contraseña nueva válida actualiza el usuario y borra el token."""
+        token = TokenVerificacion.objects.create(
+            usuario=self.user,
+            tipo=TokenVerificacion.TIPO_RECUPERACION,
+        )
+        response = self.client.post(
+            reverse("recuperar_contrasena", args=[token.token]),
+            {
+                "password1": "nueva1234",
+                "password2": "nueva1234",
+            },
+        )
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("nueva1234"))
+        self.assertFalse(TokenVerificacion.objects.filter(pk=token.pk).exists())
+        self.assertEqual(response.status_code, 302)
+
+    def test_solicitar_recuperacion_email_existente(self):
+        """
+        Solicitud con email existente siempre muestra
+        el mismo mensaje sin revelar si existe o no.
+        """
+        response = self.client.post(
+            reverse("solicitar_recuperacion"), {"email": "recuperacion@test.com"}
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_solicitar_recuperacion_email_inexistente(self):
+        """
+        Solicitud con email inexistente muestra
+        el mismo mensaje que si existiera.
+        """
+        response = self.client.post(
+            reverse("solicitar_recuperacion"), {"email": "noexiste@test.com"}
+        )
+        self.assertEqual(response.status_code, 302)

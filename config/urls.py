@@ -18,7 +18,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from agenda.views.auth_views import activar_cuenta, cuenta_pendiente
+from agenda.views.auth_views import (
+    activar_cuenta,
+    cuenta_pendiente,
+    solicitar_recuperacion,
+    recuperar_contrasena,
+)
 from django.views.generic import RedirectView
 
 urlpatterns = [
@@ -33,4 +38,12 @@ urlpatterns = [
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("accounts/activar/<uuid:token>/", activar_cuenta, name="activar_cuenta"),
     path("accounts/pendiente/", cuenta_pendiente, name="cuenta_pendiente"),
+    path(
+        "accounts/recuperacion/", solicitar_recuperacion, name="solicitar_recuperacion"
+    ),
+    path(
+        "accounts/recuperar/<uuid:token>/",
+        recuperar_contrasena,
+        name="recuperar_contrasena",
+    ),
 ]
