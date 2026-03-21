@@ -2,6 +2,16 @@
 
 Sistema de gestión de turnos médicos con notificaciones automáticas por email.
 
+> Demo disponible en: https://marzvk.pythonanywhere.com
+
+> Usuario médico: `medico` / Contraseña: `demo1234`
+
+> Usuario secretaria: `secretaria` / Contraseña: `demo1234`
+
+> Las notificaciones por mail no funcionan en el entorno demo.
+
+> Para probarlas seguí las instrucciones de instalación local.
+
 ---
 
 ## Arquitectura general
@@ -61,21 +71,34 @@ Sistema de gestión de turnos médicos con notificaciones automáticas por email
 
 ---
 
-## Configuración inicial
+## Instalación local
 
-Instalás las dependencias:
+Clonar el repositorio:
 ```bash
+git clone https://github.com/marzvk/Agenda-medico--Django.git
+cd Agenda-medico--Django
+```
+
+> Las instrucciones asumen Linux/Ubuntu. En Windows reemplazás `source .venv/bin/activate` por `.venv\Scripts\activate`.
+
+Crear el entorno virtual e instalar dependencias:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Creás el archivo `.env` en la raíz del proyecto:
+Crear el archivo `.env` en la raíz del proyecto:
 ```
+DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+SECRET_KEY=cualquier-clave-para-desarrollo
+BASE_URL=http://127.0.0.1:8000
 EMAIL_HOST_USER=tu_cuenta@gmail.com
 EMAIL_HOST_PASSWORD=tu_app_password
 ```
 
-`EMAIL_HOST_PASSWORD` no es tu contraseña de Gmail sino una contraseña de aplicación
-generada por Google. Para obtenerla:
+`EMAIL_HOST_PASSWORD` no es tu contraseña de Gmail sino una contraseña de aplicación generada por Google. Para obtenerla:
 
 1. Entrás a myaccount.google.com
 2. Seguridad → Verificación en dos pasos (tiene que estar activada)
@@ -83,17 +106,27 @@ generada por Google. Para obtenerla:
 4. Seleccionás "Correo" y "Otro dispositivo", escribís "MedAgenda"
 5. Google genera una contraseña de 16 caracteres que pegás acá
 
-Aplicás las migraciones:
+Aplicar las migraciones:
 ```bash
 python manage.py migrate
 ```
 
-Creás el superusuario:
+Crear el superusuario:
 ```bash
 python manage.py createsuperuser
 ```
 
-Creás el grupo Secretaria desde el admin de Django en `Autenticación y Autorización → Grupos`.
+Crear el grupo Secretaria desde el admin de Django en `Autenticación y Autorización → Grupos`.
+
+Instalar y levantar Redis:
+```bash
+# Ubuntu
+sudo apt install redis-server
+sudo systemctl start redis
+
+# Verificar que funciona
+redis-cli ping
+```
 
 ---
 
