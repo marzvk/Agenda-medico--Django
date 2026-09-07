@@ -9,7 +9,11 @@ class PacientePrivacidadTest(TestCase):
     def setUp(self):
         # 1. Usuarios
         self.user_a = User.objects.create_user(username="dr_a", password="pass123")
+        self.user_a.is_active = True
+        self.user_a.save()
         self.user_b = User.objects.create_user(username="dr_b", password="pass123")
+        self.user_b.is_active = True
+        self.user_b.save()
 
         # 2. Médicos (Completando todos los campos de Persona + Medico)
         self.medico_a = Medico.objects.create(

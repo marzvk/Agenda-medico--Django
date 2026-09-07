@@ -20,6 +20,8 @@ class RBACTestCase(TestCase):
         self.user_medico_a = User.objects.create_user(
             username="medico_a", password="pass123"
         )
+        self.user_medico_a.is_active = True
+        self.user_medico_a.save()
         self.medico_a = Medico.objects.create(
             user=self.user_medico_a,
             nombre="Carlos",
@@ -42,6 +44,8 @@ class RBACTestCase(TestCase):
         self.user_medico_b = User.objects.create_user(
             username="medico_b", password="pass123"
         )
+        self.user_medico_b.is_active = True
+        self.user_medico_b.save()
         self.medico_b = Medico.objects.create(
             user=self.user_medico_b,
             nombre="Ana",
@@ -64,6 +68,8 @@ class RBACTestCase(TestCase):
         self.user_secretaria = User.objects.create_user(
             username="secretaria", password="pass123"
         )
+        self.user_secretaria.is_active = True
+        self.user_secretaria.save()
         self.user_secretaria.groups.add(self.grupo_secretaria)
 
         # Paciente
@@ -165,6 +171,16 @@ class TestSecretariaPuedeOperar(RBACTestCase):
         self.client.login(username="secretaria", password="pass123")
         response = self.client.get(reverse("agenda:crear_paciente"))
         self.assertEqual(response.status_code, 200)
+
+    def test_marcar_asistido_por_GET_devuelve_405_y_no_muta(self):
+        """Las rutas que cambian estado deben rechazar GET."""
+        self.client.login(username="secretaria", password="pass123")
+        response = self.client.get(
+            reverse("agenda:marcar_asistido", args=[self.turno.id])
+        )
+        self.assertEqual(response.status_code, 405)
+        self.turno.refresh_from_db()
+        self.assertEqual(self.turno.estado, Turno.EstadoTurno.PROGRAMADO)
 
 
 class TestUsuarioNoLogueado(RBACTestCase):

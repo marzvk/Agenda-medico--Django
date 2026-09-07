@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.contrib.auth.models import User
 from datetime import date, timedelta
 from agenda.models import Medico, Paciente, Slot, Turno
 
@@ -7,6 +8,12 @@ from agenda.models import Medico, Paciente, Slot, Turno
 class AgendaVistasTest(TestCase):
     def setUp(self):
         self.client = Client()
+        # Login con rol para que lista_turnos renderice el contexto
+        self.admin = User.objects.create_superuser(
+            username="admin", email="admin@test.com", password="pass123"
+        )
+        self.client.force_login(self.admin)
+
         # Creamos la data necesaria (Persona tiene campos obligatorios)
         self.medico = Medico.objects.create(
             nombre="Gregory",
