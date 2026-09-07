@@ -6,6 +6,7 @@ from agenda.services.turno_service import TurnoService
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from agenda.utils import user_es_medico
 from django.core.exceptions import PermissionDenied
 
@@ -114,6 +115,7 @@ def reservar_turno(request, slot_id):
 
 #
 @login_required
+@require_POST
 def marcar_asistido(request, turno_id):
     if user_es_medico(request.user):
         raise PermissionDenied

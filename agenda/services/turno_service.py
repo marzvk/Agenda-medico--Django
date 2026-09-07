@@ -28,8 +28,13 @@ class TurnoService:
         slot.disponible = False
         slot.save(update_fields=["disponible"])
 
-        # fuera de transaction.atomic por si falla el email, sino se caeria la creacion de turno
-        TurnoService._programar_notificacion(turno)
+        # Programamos las notificaciones SOLO cuando la transacción
+        # haya hecho commit. Si mandamos la tarea a Celery antes del
+        # commit, el worker podría leer el turno y descartarlo con
+        # "DoesNotExist" (raza de concurrencia).
+        transaction.on_commit(
+            lambda: TurnoService._programar_notificacion(turno)
+        )
 
         return turno
 

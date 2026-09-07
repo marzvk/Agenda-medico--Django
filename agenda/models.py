@@ -1,5 +1,5 @@
 from django.db import models
-from datetime import date, timedelta
+from datetime import date, timedelta, time
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 import uuid
@@ -51,7 +51,7 @@ class Medico(Persona):
     )
     # Notificaciones Medico
     hora_resumen_diario = models.TimeField(
-        default="08:00",
+        default=time(8, 0),
         verbose_name="Hora de resumen diario",
         help_text="Hora que el medico recibe su agenda del dia",
     )
@@ -74,6 +74,23 @@ class Paciente(Persona):
 
     def __str__(self):
         return f"{self.apellido}, {self.nombre} (DNI: {self.dni})"
+
+    def agregar_evolucion(self, nota):
+        """Añade una nueva evolución al inicio de la historia clínica
+        preservando el historial previo."""
+        from django.utils import timezone
+        from django.utils.timezone import localtime
+
+        nota = (nota or "").strip()
+        if not nota:
+            raise ValidationError("La evolución no puede estar vacía.")
+
+        fecha_str = localtime(timezone.now()).strftime("%d/%m/%Y %H:%M")
+        bloque = f"--- {fecha_str} ---\n{nota}\n\n"
+        previo = self.historia_clinica or ""
+
+        self.historia_clinica = f"{bloque}{previo}"
+        self.save(update_fields=["historia_clinica"])
 
 
 class Turno(models.Model):
