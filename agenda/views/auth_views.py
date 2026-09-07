@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.utils import timezone
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 from agenda.models import TokenVerificacion
 from agenda.utils import user_es_medico, user_es_secretaria
 from django.contrib.auth.decorators import login_required
@@ -21,6 +22,18 @@ class EstablecerContrasenaForm(forms.Form):
         min_length=8,
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
+
+    def __init__(self, *args, usuario=None, **kwargs):
+        self.usuario = usuario
+        super().__init__(*args, **kwargs)
+
+    def clean_password1(self):
+        """Aplica las políticas de contraseña del proyecto
+        (misma lista que AUTH_PASSWORD_VALIDATORS)."""
+        password1 = self.cleaned_data.get("password1")
+        if password1:
+            validate_password(password1, user=self.usuario)
+        return password1
 
     def clean(self):
         """Método que Django llama para validar
@@ -60,7 +73,7 @@ def activar_cuenta(request, token):
     usuario = token_obj.usuario
 
     if request.method == "POST":
-        form = EstablecerContrasenaForm(request.POST)
+        form = EstablecerContrasenaForm(request.POST, usuario=usuario)
         if form.is_valid():
             # set_password hashea la contraseña
             usuario.set_password(form.cleaned_data["password1"])
@@ -79,7 +92,7 @@ def activar_cuenta(request, token):
             return redirect("login")
 
     else:
-        form = EstablecerContrasenaForm()
+        form = EstablecerContrasenaForm(usuario=usuario)
 
     return render(
         request,
@@ -180,7 +193,7 @@ def recuperar_contrasena(request, token):
     usuario = token_obj.usuario
 
     if request.method == "POST":
-        form = EstablecerContrasenaForm(request.POST)
+        form = EstablecerContrasenaForm(request.POST, usuario=usuario)
         if form.is_valid():
             usuario.set_password(form.cleaned_data["password1"])
             usuario.save()
@@ -192,7 +205,7 @@ def recuperar_contrasena(request, token):
             )
             return redirect("login")
     else:
-        form = EstablecerContrasenaForm()
+        form = EstablecerContrasenaForm(usuario=usuario)
 
     return render(
         request,
