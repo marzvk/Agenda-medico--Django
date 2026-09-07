@@ -1,5 +1,4 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
 from agenda.models import Slot, Paciente, Turno, Medico
 from django.contrib import messages
 from agenda.services.turno_service import TurnoService
@@ -9,10 +8,6 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from agenda.utils import user_es_medico
 from django.core.exceptions import PermissionDenied
-
-
-def index(request):
-    return render(request, "index.html")
 
 
 # MOSTRAR LOS SLOTS
