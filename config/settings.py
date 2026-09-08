@@ -146,12 +146,14 @@ LOGOUT_REDIRECT_URL = "login"
 
 
 # ─── Celery ───────────────────────────────────────────
-CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 # Le dice a Celery que use Redis como broker
 # localhost:6379 es la dirección por defecto de Redis
 # /0 es la base de datos Redis (tiene 16, usamos la 0)
 
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
+)
 # Dónde guarda Celery el resultado de las tareas
 # Por ahora no lo usamos activamente pero es buena práctica configurarlo
 
@@ -164,12 +166,12 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Esto permite modificar horarios desde el admin de Django
 
 # ─── Email ────────────────────────────────────────────
-# Para desarrollo: imprime el mail en consola
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-# DEFAULT_FROM_EMAIL = "MedAgenda <noreply@medagenda.com>"
+# Para desarrollo: enviar el mail a consola con
+# EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
 
-
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
