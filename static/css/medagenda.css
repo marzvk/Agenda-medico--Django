@@ -1,0 +1,768 @@
+/* ===================================================================
+   MedAgenda — Sistema de diseño "la jornada del consultorio"
+   Bootstrap 5.3 como base; tokens + componentes propios por encima.
+   =================================================================== */
+
+/* ─── Tokens ──────────────────────────────────────────────────────── */
+:root {
+    --ma-papel: #F4F6F2;
+    --ma-tinta: #1E2B24;
+    --ma-consultorio: #1F6F5C;
+    --ma-consultorio-oscuro: #174F40;
+    --ma-hoy: #E2A33C;
+    --ma-pino: #5E6F66;
+    --ma-borde: #DFE5DF;
+    --ma-blanco: #FFFFFF;
+
+    --ma-asistio: #2E7D4F;
+    --ma-programado: #4A5750;
+    --ma-cancelado: #B3402E;
+    --ma-ausente: #8A5A2B;
+
+    /* re-mapeo nativo de Bootstrap 5.3 */
+    --bs-body-bg: var(--ma-papel);
+    --bs-body-color: var(--ma-tinta);
+    --bs-body-font-family: "Karla", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bs-primary: var(--ma-consultorio);
+    --bs-primary-rgb: 31, 111, 92;
+    --bs-primary-dark: var(--ma-consultorio-oscuro);
+    --bs-success: var(--ma-asistio);
+    --bs-success-rgb: 46, 125, 79;
+    --bs-danger: var(--ma-cancelado);
+    --bs-danger-rgb: 179, 64, 46;
+    --bs-warning: var(--ma-hoy);
+    --bs-warning-rgb: 226, 163, 60;
+    --bs-secondary: var(--ma-pino);
+    --bs-secondary-rgb: 94, 111, 102;
+    --bs-link-color: var(--ma-consultorio);
+    --bs-link-color-rgb: 31, 111, 92;
+    --bs-link-hover-color: var(--ma-consultorio-oscuro);
+    --bs-border-color: var(--ma-borde);
+    --bs-border-color-translucent: rgba(31, 36, 34, 0.09);
+    --bs-tertiary-bg: #EDF0EB;
+    --bs-card-bg: var(--ma-blanco);
+    --bs-card-border-color: var(--ma-borde);
+    --bs-focus-ring-color: rgba(31, 111, 92, 0.25);
+    --bs-text-secondary: var(--ma-pino);
+
+    --ma-sombra: 0 1px 2px rgba(30, 43, 36, 0.05);
+}
+
+/* ─── Tipografía ──────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6,
+.display-1, .display-2, .display-3,
+.ma-display {
+    font-family: "Bricolage Grotesque", "Karla", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--ma-tinta);
+}
+
+.ma-titulo {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 800;
+    font-size: 32px;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--ma-tinta);
+    margin-bottom: 1rem;
+}
+
+.ma-titulo--grande {
+    font-size: 40px;
+}
+
+.ma-titulo--chico {
+    font-size: 24px;
+}
+
+body {
+    font-family: "Karla", system-ui, sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.ma-numero {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+.ma-destacar {
+    color: var(--ma-consultorio);
+}
+
+.ma-destacar--hoy {
+    color: var(--ma-tinta);
+    background: var(--ma-hoy);
+    padding: 0 0.15em;
+    border-radius: 3px;
+}
+
+.texto-pino {
+    color: var(--ma-pino) !important;
+}
+
+.muted {
+    color: var(--ma-pino);
+}
+
+/* ─── Layout general ──────────────────────────────────────────────── */
+#wrapper {
+    display: flex;
+    min-height: 100vh;
+    align-items: stretch;
+}
+
+#content {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 2rem 1.5rem 4rem;
+}
+
+.contenido {
+    max-width: 1120px;
+    margin: 0 auto;
+}
+
+@media (min-width: 992px) {
+    #content {
+        padding: 2.5rem 3rem 5rem;
+    }
+}
+
+/* ─── Sidebar (tinta) ─────────────────────────────────────────────── */
+.ma-sidebar {
+    flex: 0 0 auto;
+    width: 260px;
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--ma-tinta);
+    color: #B6C2BB;
+    padding: 1.5rem 1rem;
+}
+
+.ma-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0 0.5rem 1.25rem;
+    border-bottom: 1px solid rgba(246, 250, 247, 0.12);
+    margin-bottom: 1rem;
+}
+
+.ma-marca__logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--ma-consultorio);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 18px;
+}
+
+.ma-marca__nombre {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.ma-marca__nombre span {
+    color: var(--ma-hoy);
+}
+
+.ma-marca__rol {
+    font-size: 12px;
+    color: #8A9A91;
+}
+
+.ma-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1 1 auto;
+}
+
+.ma-nav__enlace {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 6px;
+    color: #B6C2BB;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+
+.ma-nav__enlace i {
+    font-size: 1.05rem;
+    width: 20px;
+    text-align: center;
+}
+
+.ma-nav__enlace:hover,
+.ma-nav__enlace:focus-visible {
+    color: #fff;
+    background: rgba(246, 250, 247, 0.08);
+}
+
+.ma-nav__enlace.activo {
+    color: #fff;
+    background: var(--ma-consultorio);
+}
+
+.ma-nav__seccion {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: #6E7F76;
+    padding: 1rem 0.75rem 0.4rem;
+}
+
+.ma-sidebar__pie {
+    border-top: 1px solid rgba(246, 250, 247, 0.12);
+    padding-top: 1rem;
+    font-size: 13px;
+}
+
+.ma-sidebar__usuario {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.ma-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--ma-consultorio);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex: 0 0 auto;
+}
+
+.ma-sidebar__usuario-nombre {
+    color: #fff;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.ma-sidebar__usuario-rol {
+    font-size: 11px;
+    color: #8A9A91;
+}
+
+.ma-sidebar__logout {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(246, 250, 247, 0.14);
+    border-radius: 6px;
+    background: transparent;
+    color: #D8E0DB;
+    font-size: 14px;
+    transition: background-color 160ms ease-out, color 160ms ease-out;
+}
+
+.ma-sidebar__logout:hover {
+    background: rgba(246, 250, 247, 0.08);
+    color: #fff;
+}
+
+/* ─── Hojas y superficies ─────────────────────────────────────────── */
+.ma-hoja {
+    background: var(--ma-blanco);
+    border: 1px solid var(--ma-borde);
+    border-radius: 6px;
+    box-shadow: var(--ma-sombra);
+}
+
+.ma-hoja__encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--ma-borde);
+}
+
+.ma-hoja__cuerpo {
+    padding: 1.25rem;
+}
+
+.card {
+    --bs-card-spacer-y: 1.25rem;
+    --bs-card-spacer-x: 1.25rem;
+    border: 1px solid var(--ma-borde);
+    border-radius: 6px;
+    box-shadow: var(--ma-sombra);
+}
+
+.card-header {
+    border-bottom: 1px solid var(--ma-borde);
+    font-weight: 600;
+}
+
+/* ─── Sellos de estado ────────────────────────────────────────────── */
+.sello {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.sello::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: 0 0 auto;
+}
+
+.sello--asistio { color: var(--ma-asistio);   background: #E7F2EB; border-color: #BFD9C8; }
+.sello--programado { color: var(--ma-programado); background: #EAEDEA; border-color: #CDD4CF; }
+.sello--cancelado { color: var(--ma-cancelado);  background: #FAE9E6; border-color: #F0CDC6; }
+.sello--ausente { color: var(--ma-ausente);    background: #F4EBDE; border-color: #E5D4B8; }
+
+.sello--plomo {
+    color: var(--ma-pino);
+    background: #EDF0EC;
+    border-color: #D5DCD7;
+}
+
+.sello--hoy {
+    color: var(--ma-tinta);
+    background: var(--ma-hoy);
+    border-color: var(--ma-hoy);
+    font-weight: 700;
+}
+
+/* ─── Tira de días ────────────────────────────────────────────────── */
+.dias-tira {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.dias-tira__dia {
+    flex: 0 0 auto;
+    min-width: 76px;
+    text-align: center;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--ma-borde);
+    border-radius: 6px;
+    background: var(--ma-blanco);
+    color: var(--ma-tinta);
+    text-decoration: none;
+    transition: border-color 160ms ease-out;
+}
+
+.dias-tira__dia small {
+    display: block;
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.dias-tira__dia:hover,
+.dias-tira__dia:focus-visible {
+    border-color: var(--ma-consultorio);
+    color: var(--ma-consultorio);
+}
+
+.dias-tira__dia.activo {
+    background: var(--ma-hoy);
+    border-color: var(--ma-hoy);
+    color: var(--ma-tinta);
+    font-weight: 600;
+}
+
+.dias-tira__dia--hoy {
+    font-weight: 600;
+}
+
+/* ─── Hoja del día (timeline principal) ───────────────────────────── */
+.hoja-dia {
+    position: relative;
+}
+
+.hoja-dia__turno {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 1rem;
+    align-items: start;
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--ma-borde);
+}
+
+.hoja-dia__turno:last-child {
+    border-bottom: 0;
+}
+
+.hoja-dia__hora {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ma-tinta);
+    padding-top: 0.1rem;
+}
+
+.hoja-dia__hora small {
+    display: block;
+    font-family: "Karla", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ma-pino);
+}
+
+.hoja-dia__paciente {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ma-tinta);
+}
+
+.hoja-dia__meta {
+    color: var(--ma-pino);
+    font-size: 13.5px;
+    margin-top: 0.1rem;
+}
+
+.hoja-dia__acciones {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.4rem;
+}
+
+.hoja-dia__ahora {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.25rem 0;
+    position: relative;
+    z-index: 1;
+}
+
+.hoja-dia__ahora-linea {
+    flex: 1;
+    border-top: 2px solid var(--ma-hoy);
+}
+
+.hoja-dia__ahora-etiqueta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--ma-tinta);
+    background: var(--ma-hoy);
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
+}
+
+/* ─── Tablas densas ───────────────────────────────────────────────── */
+.ma-tabla {
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--ma-borde);
+    font-size: 14px;
+}
+
+.ma-tabla thead th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ma-pino);
+    background: var(--ma-terciario, #EDF0EB);
+    border-bottom: 1px solid var(--ma-borde);
+    padding: 0.7rem 0.9rem;
+    font-weight: 700;
+}
+
+.ma-tabla td {
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--ma-borde);
+    vertical-align: middle;
+}
+
+.ma-tabla tbody tr:hover {
+    --bs-table-bg: #F7F9F6;
+}
+
+/* ─── Estados vacíos ──────────────────────────────────────────────── */
+.ma-vacio {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--ma-pino);
+}
+
+.ma-vacio i {
+    font-size: 1.9rem;
+    color: var(--ma-pino);
+    opacity: 0.7;
+    display: block;
+    margin-bottom: 0.6rem;
+}
+
+.ma-vacio__titulo {
+    font-family: "Bricolage Grotesque", sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--ma-tinta);
+    margin-bottom: 0.25rem;
+}
+
+.ma-vacio__texto {
+    font-size: 14px;
+    max-width: 380px;
+    margin: 0 auto 1rem;
+}
+
+/* ─── Segmented control ───────────────────────────────────────────── */
+.segmentado {
+    display: inline-flex;
+    border: 1px solid var(--ma-borde);
+    border-radius: 6px;
+    background: var(--ma-blanco);
+    overflow: hidden;
+}
+
+.segmentado__opcion {
+    border: 0;
+    background: transparent;
+    padding: 0.45rem 0.9rem;
+    font-size: 13.5px;
+    color: var(--ma-pino);
+    font-weight: 600;
+}
+
+.segmentado__opcion + .segmentado__opcion {
+    border-left: 1px solid var(--ma-borde);
+}
+
+.segmentado__opcion:hover {
+    color: var(--ma-consultorio);
+}
+
+.segmentado__opcion.activa {
+    background: var(--ma-consultorio);
+    color: #fff;
+}
+
+/* ─── Formularios ─────────────────────────────────────────────────── */
+.form-control,
+.form-select,
+.form-check-input {
+    background-color: var(--ma-blanco);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--ma-consultorio);
+    box-shadow: 0 0 0 0.22rem rgba(31, 111, 92, 0.18);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--ma-tinta);
+    font-size: 14px;
+}
+
+.form-text {
+    color: var(--ma-pino);
+}
+
+.etiqueta-superior {
+    display: block;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ma-pino);
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.input-xl {
+    font-size: 16px;
+    padding: 0.6rem 0.8rem;
+}
+
+/* ─── Botones ─────────────────────────────────────────────────────── */
+.btn {
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--ma-consultorio);
+    --bs-btn-border-color: var(--ma-consultorio);
+    --bs-btn-hover-bg: var(--ma-consultorio-oscuro);
+    --bs-btn-hover-border-color: var(--ma-consultorio-oscuro);
+    --bs-btn-active-bg: var(--ma-consultorio-oscuro);
+    --bs-btn-active-border-color: var(--ma-consultorio-oscuro);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--ma-consultorio);
+    --bs-btn-border-color: var(--ma-consultorio);
+    --bs-btn-hover-bg: var(--ma-consultorio);
+    --bs-btn-hover-border-color: var(--ma-consultorio);
+    --bs-btn-active-bg: var(--ma-consultorio);
+    --bs-btn-active-border-color: var(--ma-consultorio);
+}
+
+.btn-outline-secondary {
+    --bs-btn-color: var(--ma-pino);
+    --bs-btn-border-color: var(--ma-borde);
+    --bs-btn-hover-bg: #EDF0EC;
+    --bs-btn-hover-border-color: var(--ma-pino);
+    --bs-btn-active-bg: var(--ma-pino);
+    --bs-btn-active-border-color: var(--ma-pino);
+}
+
+.badge {
+    border-radius: 999px;
+}
+
+/* ─── Auth ────────────────────────────────────────────────────────── */
+.ma-auth {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1rem;
+}
+
+.ma-auth__tarjeta {
+    width: 100%;
+    max-width: 420px;
+}
+
+.ma-auth__marca {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.ma-auth__marca .ma-marca__logo {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+    margin: 0 auto 0.6rem;
+    border-radius: 10px;
+}
+
+.ma-auth__marca .ma-marca__nombre {
+    color: var(--ma-tinta);
+    font-size: 26px;
+}
+
+.ma-auth__marca p {
+    color: var(--ma-pino);
+    margin: 0.25rem 0 0;
+}
+
+/* ─── Mensajes flash ──────────────────────────────────────────────── */
+.alert-dismissible {
+    border-radius: 6px;
+}
+
+/* ─── Accesibilidad ───────────────────────────────────────────────── */
+:focus-visible {
+    outline: 3px solid rgba(31, 111, 92, 0.5);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+::selection {
+    background: rgba(226, 163, 60, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 992px) {
+    #wrapper {
+        flex-direction: column;
+    }
+
+    .ma-sidebar {
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        position: static;
+        padding: 1rem;
+    }
+
+    .ma-marca {
+        padding-bottom: 0.75rem;
+    }
+
+    .ma-nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .ma-nav__seccion {
+        display: none;
+    }
+
+    .ma-nav__enlace {
+        font-size: 14px;
+        padding: 0.5rem 0.65rem;
+    }
+
+    .ma-sidebar__pie {
+        border-top: 0;
+        padding-top: 0.5rem;
+    }
+
+    .ma-sidebar__logout {
+        width: auto;
+    }
+
+    .hoja-dia__turno {
+        grid-template-columns: 56px 1fr;
+    }
+
+    .hoja-dia__acciones {
+        grid-column: 2;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}

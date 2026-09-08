@@ -1,123 +1,156 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ficha del paciente · MedAgenda{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Ficha del Paciente</h2>
-        <a href="{% url 'agenda:lista_pacientes' %}" class="btn btn-outline-secondary">Volver al listado</a>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb small texto-pino mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'agenda:lista_pacientes' %}" class="texto-pino">Pacientes</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ paciente.apellido }}, {{ paciente.nombre }}</li>
+            </ol>
+        </nav>
+        <h1 class="ma-titulo ma-titulo--grande mb-0">{{ paciente.apellido }}, <span class="ma-destacar">{{ paciente.nombre }}</span></h1>
     </div>
+    {% if es_medico %}
+    <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-primary">
+        <i class="bi bi-file-earmark-medical me-1"></i> Evolución médica
+    </a>
+    {% else %}
+    <a href="{% url 'agenda:editar_paciente' paciente.id %}" class="btn btn-primary">
+        <i class="bi bi-pencil me-1"></i> Editar datos
+    </a>
+    {% endif %}
+</div>
 
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body bg-light rounded">
-            <div class="row">
-                <div class="col-md-4">
-                    <p class="mb-1 text-muted small text-uppercase fw-bold">Nombre Completo</p>
-                    <h4 class="mb-0">{{ paciente.apellido|upper }}, {{ paciente.nombre }}</h4>
-                </div>
-                <div class="col-md-2">
-                    <p class="mb-1 text-muted small text-uppercase fw-bold">DNI</p>
-                    <h5 class="mb-0">{{ paciente.dni }}</h5>
-                </div>
-                <div class="col-md-3">
-                    <p class="mb-1 text-muted small text-uppercase fw-bold">Teléfono / Email</p>
-                    <p class="mb-0">{{ paciente.telefono }}</p>
-                    <p class="text-muted small">{{ paciente.email }}</p>
-                </div>
-                <div class="col-md-3 text-end">
-                {% if es_medico %}
-                    <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-sm btn-success">
-                        <i class="bi bi-file-earmark-medical"></i> Evolución Médica
-                    </a>
-                {% else %}
-                    <a href="{% url 'agenda:editar_paciente' paciente.id %}" class="btn btn-sm btn-primary">
-                        Editar Datos Personales
-                    </a>
-                {% endif %}
+<div class="ma-hoja mb-4">
+    <div class="ma-hoja__cuerpo">
+        <div class="row g-4 align-items-start">
+            <div class="col-sm-4">
+                <span class="etiqueta-superior">DNI</span>
+                <span class="fw-bold ma-numero">{{ paciente.dni }}</span>
             </div>
+            <div class="col-sm-4">
+                <span class="etiqueta-superior">Teléfono</span>
+                <span class="fw-bold ma-numero">{{ paciente.telefono }}</span>
+            </div>
+            <div class="col-sm-4">
+                <span class="etiqueta-superior">Email</span>
+                <span class="fw-bold">{{ paciente.email }}</span>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 text-success"><i class="bi bi-file-earmark-medical-fill"></i> Historia Clínica / Evoluciones</h5>
+<div class="ma-hoja mb-4">
+    <div class="ma-hoja__encabezado">
+        <h2 class="ma-titulo--chico mb-0"><i class="bi bi-file-earmark-medical me-2 texto-pino"></i>Historia clínica</h2>
+        {% if es_medico %}
+        <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-lg me-1"></i> Agregar evolución
+        </a>
+        {% endif %}
+    </div>
+    <div class="ma-hoja__cuerpo">
+        {% if paciente.historia_clinica %}
+        <div class="lh-base small" style="white-space: pre-wrap; max-height: 420px; overflow-y: auto;">{{ paciente.historia_clinica }}</div>
+        {% else %}
+        <div class="ma-vacio py-3">
+            <i class="bi bi-journal-medical"></i>
+            <div class="ma-vacio__titulo">Sin historia clínica aún</div>
+            <p class="ma-vacio__texto">
+                La historia médica del paciente aparece acá una vez que el médico registre la primera evolución.
+            </p>
             {% if es_medico %}
-            <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-plus-lg"></i> Agregar Evolución
+            <a href="{% url 'agenda:editar_historia' paciente.id %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Registrar primera evolución
             </a>
             {% endif %}
         </div>
-        <div class="card-body bg-white p-4" style="max-height: 400px; overflow-y: auto;">
-            {% if paciente.historia_clinica %}
-                <div class="lh-base" style="white-space: pre-wrap;">{{ paciente.historia_clinica }}</div>
-            {% else %}
-                <p class="text-muted text-center my-3">No hay registros médicos cargados aún.</p>
-            {% endif %}
-        </div>
+        {% endif %}
     </div>
-   
+</div>
 
-
-
-    <h5 class="mb-3 text-primary"><i class="bi bi-calendar-event"></i> Próximos Turnos Programados</h5>
-    <div class="card shadow-sm mb-4">
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead class="table-info">
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Médico</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in proximos_turnos %}
-                    <tr>
-                        <td><strong>{{ t.slot.fecha|date:"d/m/Y" }}</strong></td>
-                        <td>{{ t.slot.hora_inicio|time:"H:i" }}</td>
-                        <td>Dr. {{ t.slot.medico.apellido }}</td>
-                        <td><span class="badge bg-primary">Programado</span></td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-muted text-center py-3">No tiene turnos pendientes.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="ma-hoja mb-4">
+    <div class="ma-hoja__encabezado">
+        <h2 class="ma-titulo--chico mb-0"><i class="bi bi-calendar2-check me-2 texto-pino"></i>Próximos turnos programados</h2>
     </div>
+    <div class="table-responsive">
+        <table class="table ma-tabla align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    <th>Médico</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in proximos_turnos %}
+                <tr>
+                    <td class="ma-numero fw-semibold">{{ t.slot.fecha|date:"d/m/Y" }}</td>
+                    <td class="ma-numero">{{ t.slot.hora_inicio|time:"H:i" }} hs</td>
+                    <td>Dr. {{ t.slot.medico.apellido }}</td>
+                    <td><span class="sello sello--programado">Programado</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="ma-vacio py-3">
+                            <i class="bi bi-calendar2-x"></i>
+                            <div class="ma-vacio__titulo">Sin turnos próximos</div>
+                            <p class="ma-vacio__texto">Este paciente no tiene turnos programados a partir de hoy.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <h5 class="mb-3 text-secondary"><i class="bi bi-clock-history"></i> Historial Completo de Turnos</h5>
-    <div class="card shadow-sm">
-        <div class="table-responsive">
-            <table class="table table-sm table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Médico</th>
-                        <th>Estado</th>
-                        <th>Notas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in historial_turnos %}
-                    <tr>
-                        <td>{{ t.slot.fecha|date:"d/m/Y" }}</td>
-                        <td>Dr. {{ t.slot.medico.apellido }}</td>
-                        <td>
-                            {% if t.estado == 'PR' %}<span class="badge bg-primary">Programado</span>
-                            {% elif t.estado == 'AS' %}<span class="badge bg-success">Asistido</span>
-                            {% elif t.estado == 'CA' %}<span class="badge bg-danger">Cancelado</span>
-                            {% else %}<span class="badge bg-warning text-dark">Ausente</span>{% endif %}
-                        </td>
-                        <td class="small text-muted">{{ t.notas|truncatechars:30 }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="ma-hoja">
+    <div class="ma-hoja__encabezado">
+        <h2 class="ma-titulo--chico mb-0"><i class="bi bi-clock-history me-2 texto-pino"></i>Historial completo</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="table ma-tabla align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Médico</th>
+                    <th>Estado</th>
+                    <th>Notas</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in historial_turnos %}
+                <tr>
+                    <td class="ma-numero">{{ t.slot.fecha|date:"d/m/Y" }}</td>
+                    <td>Dr. {{ t.slot.medico.apellido }}</td>
+                    <td>
+                        {% if t.estado == 'PR' %}<span class="sello sello--programado">Programado</span>
+                        {% elif t.estado == 'AS' %}<span class="sello sello--asistio">Asistido</span>
+                        {% elif t.estado == 'AU' %}<span class="sello sello--ausente">Ausente</span>
+                        {% else %}<span class="sello sello--cancelado">Cancelado</span>{% endif %}
+                    </td>
+                    <td class="texto-pino small">{{ t.notas|truncatechars:40|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="ma-vacio py-3">
+                            <i class="bi bi-clock-history"></i>
+                            <div class="ma-vacio__titulo">Sin historial</div>
+                            <p class="ma-vacio__texto">Todavía no hay turnos finalizados para este paciente.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

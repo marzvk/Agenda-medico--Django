@@ -1,123 +1,97 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}MedSystem{% endblock %}</title>
+    <title>{% block title %}MedAgenda{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<%3Fxml version='1.0' encoding='UTF-8'%3F><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231F6F5C'/><circle cx='16' cy='16' r='7' fill='%23E2A33C'/></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            overflow-x: hidden;
-            background-color: #f4f7f6;
-        }
-
-        #wrapper {
-            display: flex;
-            width: 100%;
-            align-items: stretch;
-        }
-
-        #sidebar {
-            min-width: 250px;
-            max-width: 250px;
-            min-height: 100vh;
-            background: #212529;
-            color: #fff;
-            transition: all 0.3s;
-        }
-
-        #sidebar .sidebar-header {
-            padding: 20px;
-            background: #1a1d20;
-            border-bottom: 1px solid #373b3e;
-        }
-
-        #sidebar ul li a {
-            padding: 15px 20px;
-            display: block;
-            color: #adb5bd;
-            text-decoration: none;
-            border-bottom: 1px solid #2c3136;
-        }
-
-        #sidebar ul li a:hover {
-            background: #343a40;
-            color: #fff;
-        }
-
-        #content {
-            width: 100%;
-            padding: 20px;
-        }
-
-        .nav-active {
-            color: #fff !important;
-            background: #0d6efd !important;
-        }
-    </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="{% static 'css/medagenda.css' %}" rel="stylesheet">
 </head>
 
 <body>
-
     <div id="wrapper">
-        <nav id="sidebar">
-            <div class="sidebar-header">
-                <h3>🩺 MedAgenda</h3>
-            </div>
 
-            <ul class="list-unstyled components">
-                <li>
-                    <a href="{% url 'agenda:lista_turnos' %}">📋 Inicio</a>
-                </li>
-                <li>
-                    <a href="{% url 'agenda:lista_slots' %}">📅 Agenda de Turnos</a>
-                </li>                
-                {% if not es_medico %}
-                <li>
-                    <a href="{% url 'agenda:lista_medicos' %}">👨‍⚕️ Mis Médicos</a>
-                </li>
-                {% endif %}
-                <li>
-                    <a href="{% url 'agenda:lista_pacientes' %}">👥 Pacientes</a>
-                </li>
-
-                <hr class="bg-light mx-3">
         {% if user.is_authenticated %}
-        <li class="px-3 mb-2">
-            <small class="text-muted">Conectado como:</small><br>
-            <span class="badge bg-primary">{{ user.username }}</span>
-        </li>
-        <li>
-            <form action="{% url 'logout' %}" method="post" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-link text-decoration-none text-danger w-100 text-start px-3 py-2">
-                    🚪 Cerrar Sesión
-                </button>
-            </form>
-        </li>
-        {% else %}
-        <li>
-            <a href="{% url 'login' %}">🔑 Iniciar Sesión</a>
-        </li>
-        {% endif %}
-        
-            </ul>
-        </nav>
+        <nav class="ma-sidebar" aria-label="Navegación principal">
+            <a class="ma-marca" href="{% url 'agenda:lista_turnos' %}">
+                <span class="ma-marca__logo"><i class="bi bi-calendar2-day"></i></span>
+                <div>
+                    <div class="ma-marca__nombre"><span>med</span>agenda</div>
+                    {% if es_medico %}<div class="ma-marca__rol">Consultorio</div>{% endif %}
+                </div>
+            </a>
 
-        <div id="content">
-            {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="ma-nav">
+                <div class="ma-nav__seccion">Turnos</div>
+
+                <a href="{% url 'agenda:lista_turnos' %}"
+                    class="ma-nav__enlace {% if request.resolver_match.url_name == 'lista_turnos' %}activo{% endif %}">
+                    <i class="bi bi-calendar2-week"></i> Hoja del día
+                </a>
+
+                <a href="{% url 'agenda:lista_slots' %}"
+                    class="ma-nav__enlace {% if request.resolver_match.url_name == 'lista_slots' %}activo{% endif %}">
+                    <i class="bi bi-calendar-plus"></i> Agenda de turnos
+                </a>
+
+                <div class="ma-nav__seccion">Consultorio</div>
+
+                {% if not es_medico %}
+                <a href="{% url 'agenda:lista_medicos' %}"
+                    class="ma-nav__enlace {% if request.resolver_match.url_name == 'lista_medicos' or request.resolver_match.url_name == 'agenda_medico' or request.resolver_match.url_name == 'generar_agenda' or request.resolver_match.url_name == 'gestionar_disponibilidad' %}activo{% endif %}">
+                    <i class="bi bi-person-vcard"></i> Mis médicos
+                </a>
+                {% endif %}
+
+                <a href="{% url 'agenda:lista_pacientes' %}"
+                    class="ma-nav__enlace {% if request.resolver_match.url_name == 'lista_pacientes' or request.resolver_match.url_name == 'detalle_paciente' or request.resolver_match.url_name == 'crear_paciente' or request.resolver_match.url_name == 'editar_paciente' or request.resolver_match.url_name == 'editar_historia' %}activo{% endif %}">
+                    <i class="bi bi-people"></i> Pacientes
+                </a>
             </div>
-            {% endfor %}
-            {% endif %}
 
-            {% block content %}
-            {% endblock %}
-        </div>
+            <div class="ma-sidebar__pie">
+                <div class="ma-sidebar__usuario">
+                    <span class="ma-avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+                    <div>
+                        <div class="ma-sidebar__usuario-nombre">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        <div class="ma-sidebar__usuario-rol">{% if es_medico %}Médico/a{% else %}Consultorio{% endif %}</div>
+                    </div>
+                </div>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="ma-sidebar__logout">
+                        <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                    </button>
+                </form>
+            </div>
+        </nav>
+        {% endif %}
+
+        <main id="content" class="{% if not user.is_authenticated %}w-100{% endif %}">
+            <div class="contenido">
+
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                {% block content %}
+                {% endblock %}
+
+            </div>
+        </main>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

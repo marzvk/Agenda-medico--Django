@@ -1,5 +1,6 @@
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.contrib.auth.models import User, Group
 from datetime import date
 from agenda.models import Medico, Paciente, Slot, Turno
 
@@ -36,6 +37,14 @@ class AccionesTurnoTest(TestCase):
         self.turno = Turno.objects.create(
             paciente=self.paciente, slot=self.slot, estado="PR"
         )
+
+        # Usuario secretaria (rol requerido por estas vistas)
+        user = User.objects.create_user(username="secretaria", password="pass123")
+        user.is_active = True
+        user.save()
+        grupo, _ = Group.objects.get_or_create(name="Secretaria")
+        user.groups.add(grupo)
+        self.client.login(username="secretaria", password="pass123")
 
     def test_marcar_asistido_actualiza_db(self):
         """Verifica que la URL marcar_asistido cambie el estado a 'AS'"""

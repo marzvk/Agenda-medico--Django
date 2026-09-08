@@ -14,6 +14,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,12 +27,20 @@ load_dotenv(BASE_DIR / ".env")
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    "SECRET_KEY", "django-insecure-uij+yy-()&n7_vbq*_k&dj6b@myp@2yu%3g6u2mo+9zi_vt340"
-)
-
 DEBUG = os.getenv("DEBUG", "True") == "True"
+
+# SECURITY WARNING: keep the secret key used in production secret!
+# El key se lee de .env. En desarrollo, si falta, se genera uno efímero;
+# en producción es obligatorio definirlo para no arrancar con uno conocido.
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = get_random_secret_key()
+    else:
+        raise ImproperlyConfigured(
+            "SECRET_KEY no está definido. Definilo en el archivo .env "
+            "antes de desplegar en producción."
+        )
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
 
@@ -127,6 +138,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # LOGIN
 LOGIN_URL = "login"
@@ -135,12 +147,14 @@ LOGOUT_REDIRECT_URL = "login"
 
 
 # ─── Celery ───────────────────────────────────────────
-CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 # Le dice a Celery que use Redis como broker
 # localhost:6379 es la dirección por defecto de Redis
 # /0 es la base de datos Redis (tiene 16, usamos la 0)
 
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
+)
 # Dónde guarda Celery el resultado de las tareas
 # Por ahora no lo usamos activamente pero es buena práctica configurarlo
 
@@ -153,12 +167,12 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Esto permite modificar horarios desde el admin de Django
 
 # ─── Email ────────────────────────────────────────────
-# Para desarrollo: imprime el mail en consola
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-# DEFAULT_FROM_EMAIL = "MedAgenda <noreply@medagenda.com>"
+# Para desarrollo: enviar el mail a consola con
+# EMAIL_BACKEND=django.core.mail.backends.console.EmailBackend
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend"
+)
 
-
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
@@ -167,3 +181,43 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = f"MedAgenda <{os.getenv('EMAIL_HOST_USER')}>"
 
 BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8000")
+
+
+# ─── Logging ───────────────────────────────────────────
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{asctime}] {levelname} {name} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "loggers": {
+        "django": {"handlers": ["console"], "level": LOG_LEVEL},
+        "agenda": {"handlers": ["console"], "level": LOG_LEVEL},
+    },
+}
+
+
+# ─── Seguridad (solo producción) ───────────────────────
+# En desarrollo no se fuerzan HTTPS ni cookies seguras.
+# Se puede sobreescribir cada flag con una variable de entorno.
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True") == "True"
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = (
+        os.getenv("SESSION_COOKIE_SECURE", "True") == "True"
+    )
+    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", "True") == "True"
+    SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

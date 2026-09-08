@@ -1,11 +1,14 @@
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from agenda.models import Medico, Slot, DisponibilidadSemanal
 from agenda.services.slot_service import generar_slots_para_medico
+from agenda.forms import SlotForm
+from agenda.utils import user_es_medico
 from django.utils import timezone
 from django.db.models import Count, Q
-from datetime import timedelta, datetime, time
+from datetime import timedelta
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
 
@@ -13,8 +16,8 @@ from django.core.exceptions import PermissionDenied
 #
 @login_required
 def generar_agenda(request, medico_id):
-    # Solo secretaria puede generar agenda
-    if hasattr(request.user, "perfil_medico"):
+    # Solo secretaria/admin puede generar agenda
+    if user_es_medico(request.user):
         raise PermissionDenied
     medico = get_object_or_404(Medico, id=medico_id)
     hoy = timezone.localdate()
@@ -34,11 +37,19 @@ def generar_agenda(request, medico_id):
             )
             return redirect("agenda:generar_agenda", medico_id=medico.id)
 
-        semanas = int(request.POST.get("semanas", 4))
+        try:
+            semanas = int(request.POST.get("semanas", 4))
+        except (TypeError, ValueError):
+            semanas = 4
         dias_seleccionados = request.POST.getlist("dias_seleccionados")
         modo = request.POST.get("modo")
 
-        dias_indices = [int(d) for d in dias_seleccionados]
+        dias_indices = []
+        for d in dias_seleccionados:
+            if d.isdigit():
+                val = int(d)
+                if 0 <= val <= 6:
+                    dias_indices.append(val)
 
         fecha_inicio = hoy + timedelta(days=1)
         fecha_fin = hoy + timedelta(weeks=semanas)
@@ -52,54 +63,11 @@ def generar_agenda(request, medico_id):
                     disponible=True,
                 ).delete()
 
-            disponibilidades = medico.disponibilidades.filter(
-                activo=True, dias_semana__in=dias_indices
+            slots_creados = generar_slots_para_medico(
+                medico,
+                dias_adelante=semanas * 7,
+                dias_seleccionados=dias_indices,
             )
-
-            slots_creados = 0
-            fecha_cursor = fecha_inicio
-            while fecha_cursor <= fecha_fin:
-
-                dia_semana_cursor = fecha_cursor.weekday()
-
-                if dia_semana_cursor in dias_indices:
-
-                    bloques_dia = disponibilidades.filter(dias_semana=dia_semana_cursor)
-                    duracion = medico.tiempo_consulta
-
-                    for bloque in bloques_dia:
-
-                        hora_actual = bloque.hora_inicio
-                        while hora_actual < bloque.hora_fin:
-
-                            proxima_hora_dt = timezone.datetime.combine(
-                                fecha_cursor, hora_actual
-                            ) + timedelta(minutes=duracion)
-                            proxima_hora = proxima_hora_dt.time()
-
-                            if (
-                                proxima_hora > bloque.hora_fin
-                                and hora_actual < bloque.hora_fin
-                            ):
-
-                                break
-
-                            slot, created = Slot.objects.get_or_create(
-                                medico=medico,
-                                fecha=fecha_cursor,
-                                hora_inicio=hora_actual,
-                                hora_fin=proxima_hora,
-                                defaults={"disponible": True},
-                            )
-                            if created:
-                                slots_creados += 1
-
-                            full_datetime = timezone.datetime.combine(
-                                fecha_cursor, hora_actual
-                            ) + timedelta(minutes=duracion)
-                            hora_actual = full_datetime.time()
-
-                fecha_cursor += timedelta(days=1)
 
         messages.success(
             request, f"Proceso finalizado. Se crearon {slots_creados} nuevos turnos."
@@ -135,19 +103,20 @@ def generar_agenda(request, medico_id):
 
 
 @login_required
+@require_POST
 def crear_slot_manual(request, medico_id):
-    from agenda.utils import user_es_medico
-
     if user_es_medico(request.user):
         if request.user.perfil_medico.id != medico_id:
             raise PermissionDenied
 
     medico = get_object_or_404(Medico, id=medico_id)
 
-    if request.method == "POST":
-        fecha = request.POST.get("fecha")
-        h_inicio = request.POST.get("hora_inicio")
-        h_fin = request.POST.get("hora_fin")
+    form = SlotForm(request.POST, medico=medico)
+
+    if form.is_valid():
+        fecha = form.cleaned_data["fecha"]
+        h_inicio = form.cleaned_data["hora_inicio"]
+        h_fin = form.cleaned_data["hora_fin"]
 
         # Validar superposición
         existe_choque = Slot.objects.filter(
@@ -170,5 +139,9 @@ def crear_slot_manual(request, medico_id):
                 messages.success(request, "Slot individual creado con éxito.")
             except Exception as e:
                 messages.error(request, f"Error al crear el slot: {e}")
+    else:
+        for error in form.errors.values():
+            for detalle in error:
+                messages.error(request, f"Error: {detalle}")
 
     return redirect("agenda:generar_agenda", medico_id=medico.id)

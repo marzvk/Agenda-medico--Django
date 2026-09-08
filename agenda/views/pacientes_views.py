@@ -3,7 +3,6 @@ from ..models import Paciente, Turno
 from django import forms
 from django.contrib import messages
 from django.db import models
-from django.utils.timezone import localtime
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -174,20 +173,17 @@ def editar_historia(request, pk):
         raise PermissionDenied
 
     if request.method == "POST":
-        form = HistoriaClinicaForm(request.POST, instance=paciente)
+        # El form arranca vacío: solo contiene la NUEVA nota.
+        # El historial previo se conserva y la evolución se
+        # agrega al inicio (append).
+        form = HistoriaClinicaForm(request.POST)
         if form.is_valid():
-            # Lógica de la fecha: recuperamos el texto nuevo
-            nueva_nota = form.cleaned_data.get("historia_clinica")
-            fecha_str = localtime(timezone.now()).strftime("%d/%m/%Y %H:%M")
-
-            # Guardamos con el encabezado de fecha
-            paciente.historia_clinica = f"--- {fecha_str} ---\n{nueva_nota}\n\n"
-            paciente.save()
+            paciente.agregar_evolucion(form.cleaned_data["historia_clinica"])
 
             messages.success(request, "Evolución guardada.")
             return redirect("agenda:detalle_paciente", paciente_id=paciente.id)
     else:
-        form = HistoriaClinicaForm(instance=paciente)
+        form = HistoriaClinicaForm()
 
     return render(
         request,

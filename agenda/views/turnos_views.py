@@ -1,17 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
 from agenda.models import Slot, Paciente, Turno, Medico
 from django.contrib import messages
 from agenda.services.turno_service import TurnoService
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from agenda.utils import user_es_medico
 from django.core.exceptions import PermissionDenied
-
-
-def index(request):
-    return render(request, "index.html")
 
 
 # MOSTRAR LOS SLOTS
@@ -114,6 +110,7 @@ def reservar_turno(request, slot_id):
 
 #
 @login_required
+@require_POST
 def marcar_asistido(request, turno_id):
     if user_es_medico(request.user):
         raise PermissionDenied
@@ -178,6 +175,12 @@ def lista_turnos(request):
 
         turnos = turnos.filter(slot__fecha__range=[hoy, hoy + timedelta(days=7)])
 
+    fecha_actual = fecha_query or str(hoy)
+    try:
+        fecha_display = date.fromisoformat(fecha_actual).strftime("%d/%m/%Y")
+    except ValueError:
+        fecha_display = fecha_actual
+
     context = {
         "turnos": turnos,
         "medicos": Medico.objects.all(),
@@ -186,7 +189,8 @@ def lista_turnos(request):
             [medico_seleccionado.id] if medico_seleccionado else []
         ),
         "proximos_dias": proximos_dias,
-        "fecha_actual": fecha_query or str(hoy),
+        "fecha_actual": fecha_actual,
+        "fecha_display": fecha_display,
         "hoy_str": str(hoy),
         "es_medico": es_medico,
     }

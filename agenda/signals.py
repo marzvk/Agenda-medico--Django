@@ -1,7 +1,9 @@
 import json
 import logging
+from datetime import time as dt_time
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
+from django.utils.dateparse import parse_time
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from django.contrib.auth.models import User
 from agenda.models import TokenVerificacion
@@ -18,13 +20,28 @@ def _nombre_tarea_medico(medico):
     return f"resumen_diario_medico_{medico.id}"
 
 
+def _hora_resumen(medico):
+    """Devuelve la hora del resumen como objeto `datetime.time`.
+
+    El default del campo puede llegar como string ("08:00") cuando
+    el médico se crea sin setearlo explícitamente; lo normalizamos
+    acá para que la signal nunca falle.
+    """
+    hora = medico.hora_resumen_diario
+    if isinstance(hora, str):
+        hora = parse_time(hora)
+    return hora or dt_time(8, 0)
+
+
 #
 def _actualizar_beat_para_medico(medico):
     """Crea o actualiza el schedule de Beat para un medico"""
 
+    hora = _hora_resumen(medico)
+
     schedule, _ = CrontabSchedule.objects.get_or_create(
-        minute=medico.hora_resumen_diario.minute,
-        hour=medico.hora_resumen_diario.hour,
+        minute=hora.minute,
+        hour=hora.hour,
         day_of_week="*",
         day_of_month="*",
         month_of_year="*",
@@ -41,7 +58,7 @@ def _actualizar_beat_para_medico(medico):
         },
     )
     logger.info(
-        f"Beat actualizado para medico {medico,id} a las {medico.hora_resumen_diario}"
+        f"Beat actualizado para medico {medico.id} a las {medico.hora_resumen_diario}"
     )
 
 
