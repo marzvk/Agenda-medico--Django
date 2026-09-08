@@ -1,121 +1,142 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Slots Disponibles{% endblock %}
+{% block title %}Agenda de turnos · MedAgenda{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <div class="mb-3">
-            <div class="btn-group" role="group" aria-label="Accesos rápidos">
-                <a href="?fecha={{ hoy_str }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
-                    class="btn btn-outline-secondary {% if fecha_actual == hoy_str %}active{% endif %}">
-                    ☀️ Hoy
-                </a>
-
-                <a href="?fecha={{ manana_inteligente }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
-                    class="btn btn-outline-primary {% if fecha_actual == manana_inteligente %}active{% endif %}">
-                    ⏭️ Próximo Disponible
-                    {% if manana_inteligente != hoy_str and fecha_actual != manana_inteligente %}
-                    ({{ manana_inteligente }})
-                    {% endif %}
-                </a>
-
-                <a href="{% url 'agenda:lista_slots' %}" class="btn btn-outline-secondary">
-                    🔄 Ver Todo (Futuro)
-                </a>
-            </div>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+        <h1 class="ma-titulo ma-titulo--grande mb-1">Agenda de <span class="ma-destacar">turnos</span></h1>
+        <p class="texto-pino mb-0">
             {% if medico_seleccionado %}
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalSlotManual">
-                ➕ Crear Slot Extra (Dr. {{ medico_seleccionado.apellido }})
-            </button>
+            Lugares libres de Dr. {{ medico_seleccionado.apellido }} {{ medico_seleccionado.nombre }}
+            {% else %}
+            Lugares libres en el consultorio
             {% endif %}
-        </div>
-        <div class="mb-3">
-            <small class="text-muted d-block mb-2">Días con lugares libres próximamente:</small>
+        </p>
+    </div>
+    {% if medico_seleccionado %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalSlotManual">
+        <i class="bi bi-plus-lg me-1"></i> Slot extra
+    </button>
+    {% endif %}
+</div>
+
+<div class="ma-hoja mb-4 p-3">
+    <div class="d-flex flex-wrap gap-2">
+        <a href="?fecha={{ hoy_str }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
+           class="btn btn-sm {% if fecha_actual == hoy_str %}btn-warning text-dark{% else %}btn-outline-secondary{% endif %}">
+            <i class="bi bi-sun me-1"></i> Hoy
+        </a>
+
+        <a href="?fecha={{ manana_inteligente }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
+           class="btn btn-sm {% if fecha_actual == manana_inteligente and fecha_actual != hoy_str %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            <i class="bi bi-arrow-right-circle me-1"></i> Próximo disponible
+            {% if manana_inteligente != hoy_str and fecha_actual != manana_inteligente %}
+            <span class="ma-numero">({{ manana_inteligente }})</span>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'agenda:lista_slots' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-calendar3 me-1"></i> Ver todo
+        </a>
+    </div>
+
+    {% if dias_con_slots %}
+    <div class="mt-3">
+        <small class="texto-pino d-block mb-2">Días con lugares libres:</small>
+        <div class="d-flex flex-wrap gap-2">
             {% for dia in dias_con_slots|slice:":7" %}
-            <a href="?fecha={{ dia|date:'Y-m-d' }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}" 
-               class="badge rounded-pill bg-success text-decoration-none me-1">
-                {{ dia|date:"D d" }}
+            <a href="?fecha={{ dia|date:'Y-m-d' }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
+               class="badge rounded-pill text-bg-light border texto-pino text-decoration-none px-3 py-2 ma-numero">
+                {{ dia|date:"D d/m" }}
             </a>
             {% endfor %}
         </div>
-        <h2 class="card-title mb-4">🔍 Buscar Disponibilidad</h2>
-
-        <form method="GET" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Fecha</label>
-                <input type="date" name="fecha" class="form-control" value="{{ fecha_actual }}">
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Médico</label>
-                <select name="medico" class="form-select">
-                    <option value="">Todos los médicos</option>
-                    {% for m in medicos %}
-                    <option value="{{ m.id }}" {% if medico_seleccionado.id == m.id %}selected{% endif %}>
-                        {{ m.nombre }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Filtrar Agenda</button>
-            </div>
-        </form>
     </div>
+    {% endif %}
+
+    <form method="GET" class="row g-2 align-items-end mt-3">
+        <div class="col-sm-5 col-lg-3">
+            <label class="form-label mb-1" for="fecha-filtro">Fecha</label>
+            <input type="date" name="fecha" id="fecha-filtro" class="form-control form-control-sm ma-numero" value="{{ fecha_actual }}">
+        </div>
+        <div class="col-sm-7 col-lg-4">
+            <label class="form-label mb-1" for="medico-filtro">Médico</label>
+            <select name="medico" id="medico-filtro" class="form-select form-select-sm">
+                {% if not es_medico %}<option value="">Todos los médicos</option>{% endif %}
+                {% for m in medicos %}
+                <option value="{{ m.id }}" {% if medico_seleccionado.id == m.id %}selected{% endif %}>
+                    {{ m.apellido }}, {{ m.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-search me-1"></i> Filtrar agenda
+            </button>
+        </div>
+    </form>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="h5 mb-0">
-                {% if medico_seleccionado %}
-                Slots de Dr. {{ medico_seleccionado.apellido }} {{ medico_seleccionado.nombre }}
-                {% else %}
-                Slots Disponibles (Todos los médicos)
-                {% endif %}
-            </h3>
+<div class="ma-hoja">
+    <div class="ma-hoja__encabezado">
+        <div>
+            <h2 class="ma-titulo--chico mb-0">Lugares <span class="ma-destacar">disponibles</span></h2>
+            <small class="texto-pino">{{ slots|length }} slot{{ slots|length|pluralize }} para reservar</small>
         </div>
+    </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        {% if not medico_seleccionado %}
-                        <th>Médico</th>
-                        {% endif %}
-                        <th class="text-end">Acción</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for slot in slots %}
-                    <tr>
-                        <td>{{ slot.fecha|date:"d/m/Y" }}</td>
-                        <td>
-                            <span class="badge bg-info text-dark">
-                                {{ slot.hora_inicio|time:"H:i" }} - {{ slot.hora_fin|time:"H:i" }}
-                            </span>
-                        </td>
-                        {% if not medico_seleccionado %}
-                        <td>{{ slot.medico.nombre }}</td>
-                        {% endif %}
-                        <td class="text-end">
-                            <a href="{% url 'agenda:reservar_turno' slot.id %}" class="btn btn-sm btn-success">
-                                ✅ Reservar
+    <div class="table-responsive">
+        <table class="table ma-tabla align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Horario</th>
+                    {% if not medico_seleccionado %}<th>Médico</th>{% endif %}
+                    <th class="text-end">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slot in slots %}
+                <tr>
+                    <td class="fw-semibold ma-numero">{{ slot.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        <span class="ma-numero fw-semibold texto-pino">
+                            {{ slot.hora_inicio|time:"H:i" }} – {{ slot.hora_fin|time:"H:i" }}
+                        </span>
+                    </td>
+                    {% if not medico_seleccionado %}
+                    <td>Dr. {{ slot.medico.apellido }}, {{ slot.medico.nombre }}</td>
+                    {% endif %}
+                    <td class="text-end">
+                        <a href="{% url 'agenda:reservar_turno' slot.id %}" class="btn btn-sm btn-success">
+                            <i class="bi bi-check-lg me-1"></i> Reservar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">
+                        <div class="ma-vacio">
+                            <i class="bi bi-calendar2-x"></i>
+                            <div class="ma-vacio__titulo">No hay lugares libres</div>
+                            <p class="ma-vacio__texto">
+                                No hay slots disponibles para los filtros elegidos.
+                                {% if not es_medico %}Generá nuevos turnos desde "Mis médicos".{% endif %}
+                            </p>
+                            {% if not es_medico %}
+                            <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-person-vcard me-1"></i> Ver médicos
                             </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-4">
-                            No hay slots disponibles.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -123,34 +144,37 @@
 <div class="modal fade" id="modalSlotManual" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Crear Slot Extra Manual</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header">
+                <h5 class="modal-title">Crear slot extra</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <form action="{% url 'agenda:crear_slot_manual' medico_seleccionado.id %}" method="POST">
                 {% csrf_token %}
                 <div class="modal-body">
+                    <p class="texto-pino small mb-3">
+                        Slot individual para Dr. {{ medico_seleccionado.apellido }} {{ medico_seleccionado.nombre }}
+                    </p>
                     <div class="mb-3">
                         <label class="form-label">Fecha</label>
-                        <input type="date" name="fecha" class="form-control" required value="{{ fecha_actual }}">
+                        <input type="date" name="fecha" class="form-control ma-numero" required value="{{ fecha_actual }}">
                     </div>
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col">
-                            <label class="form-label">Hora Inicio</label>
-                            <input type="time" name="hora_inicio" id="h_inicio_lista" class="form-control" required>
+                            <label class="form-label">Hora inicio</label>
+                            <input type="time" name="hora_inicio" id="h_inicio_lista" class="form-control ma-numero" required>
                         </div>
                         <div class="col">
-                            <label class="form-label">Hora Fin</label>
-                            <input type="time" name="hora_fin" id="h_fin_lista" class="form-control" required>
+                            <label class="form-label">Hora fin</label>
+                            <input type="time" name="hora_fin" id="h_fin_lista" class="form-control ma-numero" required>
                         </div>
                     </div>
-                    <div class="mt-2 text-muted small">
+                    <div class="texto-pino small mt-2">
                         Duración de consulta: {{ medico_seleccionado.tiempo_consulta }} min.
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Generar y Recargar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Generar y recargar</button>
                 </div>
             </form>
         </div>
@@ -158,21 +182,19 @@
 </div>
 
 <script>
-    document.getElementById('h_inicio_lista').addEventListener('change', function() {
+    document.getElementById('h_inicio_lista').addEventListener('change', function () {
         let hInicio = this.value;
         if (hInicio) {
             let [hours, minutes] = hInicio.split(':');
             let date = new Date();
             date.setHours(parseInt(hours));
             date.setMinutes(parseInt(minutes) + {{ medico_seleccionado.tiempo_consulta }});
-            
+
             let hEnd = date.getHours().toString().padStart(2, '0');
             let mEnd = date.getMinutes().toString().padStart(2, '0');
-            document.getElementById('h_fin_lista').value = `${hEnd}:${mEnd}`;
+            document.getElementById('h_fin_lista').value = hEnd + ':' + mEnd;
         }
     });
 </script>
 {% endif %}
-
-
 {% endblock %}

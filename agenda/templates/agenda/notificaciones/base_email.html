@@ -1,0 +1,139 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block email_titulo %}MedAgenda{% endblock %}</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #F4F6F2;
+    margin: 0;
+    padding: 0;
+  }
+  .carta {
+    max-width: 600px;
+    margin: 24px auto;
+    background: #FFFFFF;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #DFE5DF;
+  }
+  .encabezado {
+    background: #1E2B24;
+    color: #FFFFFF;
+    padding: 24px 28px;
+    text-align: center;
+  }
+  .encabezado .marca {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .encabezado .marca span { color: #E2A33C; }
+  .encabezado .bajada {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: #A9B5AE;
+  }
+  .contenido {
+    padding: 28px;
+    color: #1E2B24;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+  .dato {
+    background: #F4F6F2;
+    padding: 12px 16px;
+    border-left: 4px solid #1F6F5C;
+    margin: 10px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .dato strong { color: #1E2B24; }
+  .dato .etiqueta {
+    display: block;
+    font-size: 12px;
+    color: #5E6F66;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+  }
+  .boton {
+    display: inline-block;
+    background: #1F6F5C;
+    color: #FFFFFF !important;
+    padding: 13px 32px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 700;
+    margin: 22px 0;
+    text-align: center;
+  }
+  .centro { text-align: center; }
+  .aviso {
+    font-size: 13px;
+    color: #5E6F66;
+    margin-top: 18px;
+  }
+  .tabla { width: 100%; border-collapse: collapse; margin-top: 18px; }
+  .tabla th {
+    background: #1E2B24;
+    color: #FFFFFF;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+  }
+  .tabla td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #DFE5DF;
+    font-size: 14px;
+  }
+  .estadisticas {
+    display: table;
+    width: 100%;
+    margin: 18px 0;
+    table-layout: fixed;
+  }
+  .estadistica {
+    display: table-cell;
+    background: #F4F6F2;
+    border-radius: 8px;
+    padding: 14px 8px;
+    text-align: center;
+  }
+  .estadistica .numero { font-size: 24px; font-weight: 800; color: #1E2B24; }
+  .estadistica .label { font-size: 11px; color: #5E6F66; }
+  .aviso-sin-turnos {
+    background: #F4F6F2;
+    border-radius: 8px;
+    padding: 24px;
+    text-align: center;
+    color: #5E6F66;
+  }
+  .pie {
+    font-size: 12px;
+    color: #5E6F66;
+    text-align: center;
+    padding: 18px 28px;
+    border-top: 1px solid #DFE5DF;
+  }
+</style>
+</head>
+<body>
+  <div class="carta">
+    <div class="encabezado">
+      <div class="marca"><span>med</span>agenda</div>
+      <div class="bajada">{% block header_sub %}{% endblock %}</div>
+    </div>
+
+    <div class="contenido">
+      {% block contenido %}{% endblock %}
+    </div>
+
+    <div class="pie">
+      {% block pie %}Este es un mensaje automático de MedAgenda. Por favor no respondas este correo.{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

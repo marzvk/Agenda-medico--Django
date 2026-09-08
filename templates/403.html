@@ -1,9 +1,19 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Acceso restringido · MedAgenda{% endblock %}
+
 {% block content %}
-<div class="container mt-5 text-center">
-    <h1 class="display-1 text-danger">403</h1>
-    <h2>Acceso Restringido</h2>
-    <p>Usted no tiene permisos para ver la ficha de este paciente.</p>
-    <a href="{% url 'agenda:lista_pacientes' %}" class="btn btn-primary">Volver al inicio</a>
+<div class="ma-hoja ma-auth__tarjeta" style="max-width: 520px;">
+    <div class="ma-hoja__cuerpo text-center py-5">
+        <div class="display-1 fw-bold" style="font-family:'Bricolage Grotesque',sans-serif;color:var(--ma-cancelado);">403</div>
+        <h1 class="ma-titulo--chico mb-2 mt-2">Acceso <span class="ma-destacar text-danger">restringido</span></h1>
+        <p class="texto-pino mb-4">
+            No tenés permiso para ver esta pantalla. Probá desde otra sección o consultá con el administrador.
+        </p>
+        <a href="{% url 'agenda:lista_pacientes' %}" class="btn btn-primary">
+            <i class="bi bi-people me-1"></i> Ir a pacientes
+        </a>
+    </div>
 </div>
 {% endblock %}

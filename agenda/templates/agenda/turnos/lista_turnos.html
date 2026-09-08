@@ -1,145 +1,208 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Hoja del día · MedAgenda{% endblock %}
 
 {% block content %}
-<h1>Bienvenido al Sistema de Agenda</h1>
-<br>
-<div class="btn-group flex-wrap mb-4" role="group">
-    {% for dia in proximos_dias %}
-        <a href="?fecha={{ dia.fecha }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}" 
-           class="btn {% if fecha_actual == dia.fecha %}btn-primary active{% else %}btn-outline-primary{% endif %}">
-            {{ dia.label }}
-        </a>
-    {% endfor %}
-</div>
-<div class="card shadow-sm mb-4">
-    <div class="card-body">
-        <h2 class="h4 mb-3">📋 Gestión de Turnos</h2>
-        <form method="GET" class="row g-3">
-            <div class="col-md-5">
-                <input type="date" name="fecha" class="form-control" value="{{ fecha_actual }}">
-            </div>
-            <div class="col-md-5">
-                <select name="medico" class="form-select" {% if es_medico %}disabled{% endif %}>
-                    {% if not es_medico %}
-                        <option value="">Todos los médicos</option>
-                    {% endif %}
-
-                    {% for m in medicos %}
-                    <option value="{{ m.id }}" {% if m.id in medico_seleccionado_lista %}selected{% endif %}>
-                        {{ m.apellido }}, {{ m.nombre }}
-                    </option>
-                    {% endfor %}
-                </select>
-
-                {% if es_medico %}
-                    <input type="hidden" name="medico" value="{{ medico_seleccionado.id }}">
-                    <div class="form-text text-primary">Vista restringida a su agenda personal.</div>
-                {% endif %}
-                
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-            </div>
-        </form>
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+        <h1 class="ma-titulo ma-titulo--grande mb-1">Hoja del <span class="ma-destacar">día</span></h1>
+        <p class="texto-pino mb-0">
+            Turnos para el <span class="ma-numero">{{ fecha_display }}</span>
+            {% if medico_seleccionado %} · Dr. {{ medico_seleccionado.apellido }} {{ medico_seleccionado.nombre }}{% endif %}
+        </p>
     </div>
+    {% if not es_medico %}
+    <a href="{% url 'agenda:lista_slots' %}" class="btn btn-primary">
+        <i class="bi bi-calendar-plus me-1"></i> Reservar un turno
+    </a>
+    {% endif %}
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-body">
-        <h3 class="h5 mb-3">
-            {% if medico_seleccionado %}
-            Pacientes de Dr. {{ medico_seleccionado.apellido }} {{ medico_seleccionado.nombre }}
-            {% else %}
-            Lista General
-            {% endif %}
-        </h3>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Fecha/Hora</th>
-                        <th>Paciente</th>
-                        {% if not medico_seleccionado %}
-                        <th>Médico</th>
-                        {% endif %}
-                        <th>Estado</th>
-                        <th class="text-end">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for turno in turnos %}
-                    <tr>
-                        <td>
-                            <strong>{{ turno.slot.fecha|date:"d/m" }}</strong><br>
-                            <small class="text-muted">{{ turno.slot.hora_inicio|time:"H:i" }}</small>
-                        </td>
-                        <td>{{ turno.paciente.nombre }} {{ turno.paciente.apellido }}</td>
-                        {% if not medico_seleccionado %}
-                        <td>{{ turno.slot.medico.nombre }}</td>
-                        {% endif %}
-                        <td>
-                            {% if turno.estado == 'PR' %}
-                            <span class="badge bg-primary">Programado</span>
-                            {% elif turno.estado == 'AS' %}
-                            <span class="badge bg-success">Asistió</span>
-                            {% else %}
-                            <span class="badge bg-warning text-dark">{{ turno.get_estado_display }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex justify-content-end gap-2">
-                                {% if turno.estado == 'PR' %}
-                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalAsistencia{{ turno.id }}">
-                                        📍 Llegó
-                                    </button>
-                                
-                                    <form action="{% url 'agenda:cancelar_turno' turno.id %}" method="POST" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Anular este turno?')">
-                                            Cancelar
-                                        </button>
-                                    </form>
-                                {% elif turno.estado == 'AS' %}
-                                    <span class="text-success small fw-bold mt-1">
-                                        <i class="bi bi-check-circle-fill"></i> Completado
-                                    </span>
-                                {% endif %}
-                            </div>
-                        
-                            {% if turno.id %}
-                            <div class="modal fade text-start" id="modalAsistencia{{ turno.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-success text-white">
-                                            <h5 class="modal-title">Confirmar Asistencia</h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <form action="{% url 'agenda:marcar_asistido' turno.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <div class="modal-body">
-                                                <p>¿Desea registrar alguna nota para <strong>{{ turno.paciente.nombre }} {{ turno.paciente.apellido }}</strong>?</p>
-                                                <div class="mb-3">
-                                                    <label class="form-label text-muted small">Notas / Observaciones (Opcional):</label>
-                                                    <textarea name="notas" class="form-control" rows="3" placeholder="Ej: Control rutinario..."></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                                <button type="submit" class="btn btn-success">Confirmar Llegada</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
-                        </td>
-                    </tr> {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center text-muted py-4">No hay turnos registrados.</td>
-                    </tr>
-                    {% endfor %} </tbody>
-            </table>
+<div class="ma-hoja mb-4 p-3">
+    <div class="dias-tira" role="group" aria-label="Elegir día">
+        {% for dia in proximos_dias %}
+        <a href="?fecha={{ dia.fecha }}{% if medico_seleccionado %}&medico={{ medico_seleccionado.id }}{% endif %}"
+           class="dias-tira__dia {% if fecha_actual == dia.fecha %}activo{% endif %}">
+            <small>{{ dia.fecha|date:"d" }}</small>
+            {{ dia.label }}
+            {% if dia.fecha == hoy_str %}<i class="bi bi-circle-fill ms-1" style="font-size:.45rem; vertical-align:middle;"></i>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+
+    <form method="GET" class="row g-2 align-items-end mt-3">
+        <div class="col-sm-5 col-lg-3">
+            <label class="form-label mb-1" for="filtro-fecha">Ir a otra fecha</label>
+            <input type="date" name="fecha" id="filtro-fecha" class="form-control form-control-sm ma-numero" value="{{ fecha_actual }}">
+        </div>
+        {% if es_medico %}
+        <input type="hidden" name="medico" value="{{ medico_seleccionado.id }}">
+        <div class="col-12">
+            <small class="texto-pino"><i class="bi bi-info-circle me-1"></i>Vista restringida a tu agenda.</small>
+        </div>
+        {% else %}
+        <div class="col-sm-7 col-lg-4">
+            <label class="form-label mb-1" for="filtro-medico">Médico</label>
+            <select name="medico" id="filtro-medico" class="form-select form-select-sm">
+                <option value="">Todos los médicos</option>
+                {% for m in medicos %}
+                <option value="{{ m.id }}" {% if m.id in medico_seleccionado_lista %}selected{% endif %}>
+                    {{ m.apellido }}, {{ m.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-search me-1"></i> Ver día
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="ma-hoja">
+    <div class="ma-hoja__encabezado">
+        <div>
+            <h2 class="ma-titulo--chico mb-0">Turnos del <span class="ma-destacar">día</span></h2>
+            <small class="texto-pino">
+                {% if turnos %}{{ turnos|length }} turno{{ turnos|length|pluralize }}{% else %}sin turnos{% endif %}
+                {% if medico_seleccionado %} · Dr. {{ medico_seleccionado.apellido }}{% endif %}
+            </small>
         </div>
     </div>
+
+    <div class="p-3" >
+    <div class="hoja-dia" data-fecha="{% if fecha_actual == hoy_str %}{{ fecha_actual }}{% endif %}">
+        {% for turno in turnos %}
+        <div class="hoja-dia__turno" data-hora-inicio="{{ turno.slot.hora_inicio|time:'H:i' }}">
+            <div class="hoja-dia__hora ma-numero">
+                {{ turno.slot.hora_inicio|time:"H:i" }}
+                <small>hasta {{ turno.slot.hora_fin|time:"H:i" }}</small>
+            </div>
+
+            <div>
+                <div class="hoja-dia__paciente">
+                    <a href="{% url 'agenda:detalle_paciente' turno.paciente.id %}" class="text-decoration-none">
+                        {{ turno.paciente.nombre }} {{ turno.paciente.apellido }}
+                    </a>
+                </div>
+                <div class="hoja-dia__meta">
+                    {% if not medico_seleccionado %}Dr. {{ turno.slot.medico.nombre }} {{ turno.slot.medico.apellido }} · {% endif %}
+                    {{ turno.slot.medico.especialidad }}
+                </div>
+                {% if turno.notas %}
+                <div class="hoja-dia__meta"><i class="bi bi-chat-left-text me-1"></i>{{ turno.notas|truncatechars:60 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="hoja-dia__acciones">
+                {% if turno.estado == 'PR' %}
+                <span class="sello sello--programado">Programado</span>
+                {% elif turno.estado == 'AS' %}
+                <span class="sello sello--asistio">Asistido</span>
+                {% elif turno.estado == 'AU' %}
+                <span class="sello sello--ausente">Ausente</span>
+                {% else %}
+                <span class="sello sello--cancelado">Cancelado</span>
+                {% endif %}
+
+                <div class="d-flex flex-wrap gap-2">
+                    {% if turno.estado == 'PR' and not es_medico %}
+                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalAsistencia{{ turno.id }}">
+                        <i class="bi bi-check-lg me-1"></i> Registrar llegada
+                    </button>
+                    <form action="{% url 'agenda:cancelar_turno' turno.id %}" method="POST" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"
+                            onclick="return confirm('¿Anular este turno?');">
+                            <i class="bi bi-x-lg"></i> Cancelar
+                        </button>
+                    </form>
+                    {% elif turno.estado == 'AS' %}
+                    <span class="texto-pino small fw-semibold"><i class="bi bi-check2-circle"></i> Completado</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if turno.id and not es_medico %}
+        <div class="modal fade text-start" id="modalAsistencia{{ turno.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Registrar llegada</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <form action="{% url 'agenda:marcar_asistido' turno.id %}" method="POST">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <p>Paciente: <strong>{{ turno.paciente.nombre }} {{ turno.paciente.apellido }}</strong>
+                                · {{ turno.slot.hora_inicio|time:"H:i" }} hs
+                            </p>
+                            <div class="mb-2">
+                                <label for="notas-{{ turno.id }}" class="form-label">Notas / observaciones <span class="texto-pino fw-normal">(opcional)</span></label>
+                                <textarea id="notas-{{ turno.id }}" name="notas" class="form-control" rows="3" placeholder="Ej: control rutinario..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                            <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i> Confirmar llegada</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% empty %}
+        <div class="ma-vacio">
+            <i class="bi bi-calendar2-x"></i>
+            <div class="ma-vacio__titulo">Este día todavía está libre</div>
+            <p class="ma-vacio__texto">
+                {% if medico_seleccionado %}No hay turnos registrados para este médico y día.{% else %}No hay turnos registrados para este día. Reservá el primero y el consultorio entra en marcha.{% endif %}
+            </p>
+            {% if not es_medico %}
+            <a href="{% url 'agenda:lista_slots' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-calendar-plus me-1"></i> Reservar un turno
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    </div>
 </div>
+
+<script>
+(function () {
+    var HOY = "{{ hoy_str }}";
+    var hoja = document.querySelector(".hoja-dia[data-fecha]");
+    if (!hoja || !hoja.dataset.fecha || hoja.dataset.fecha !== HOY) return;
+
+    var ahora = new Date();
+    var minutoActual = ahora.getHours() * 60 + ahora.getMinutes();
+    var turnos = Array.prototype.slice.call(hoja.querySelectorAll(".hoja-dia__turno"));
+    if (!turnos.length) return;
+
+    var marcador = document.createElement("div");
+    marcador.className = "hoja-dia__ahora";
+    marcador.innerHTML =
+        '<span class="hoja-dia__ahora-etiqueta"><i class="bi bi-dot"></i>Ahora</span>' +
+        '<span class="hoja-dia__ahora-linea"></span>';
+
+    var colocado = false;
+    for (var i = 0; i < turnos.length; i++) {
+        var hora = turnos[i].dataset.horaInicio;
+        if (!hora) continue;
+        var partes = hora.split(":");
+        var minutoTurno = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10);
+        if (minutoTurno > minutoActual) {
+            hoja.insertBefore(marcador, turnos[i]);
+            colocado = true;
+            break;
+        }
+    }
+    if (!colocado) hoja.appendChild(marcador);
+})();
+</script>
 {% endblock %}

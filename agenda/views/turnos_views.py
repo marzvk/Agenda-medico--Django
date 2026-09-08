@@ -175,6 +175,12 @@ def lista_turnos(request):
 
         turnos = turnos.filter(slot__fecha__range=[hoy, hoy + timedelta(days=7)])
 
+    fecha_actual = fecha_query or str(hoy)
+    try:
+        fecha_display = date.fromisoformat(fecha_actual).strftime("%d/%m/%Y")
+    except ValueError:
+        fecha_display = fecha_actual
+
     context = {
         "turnos": turnos,
         "medicos": Medico.objects.all(),
@@ -183,7 +189,8 @@ def lista_turnos(request):
             [medico_seleccionado.id] if medico_seleccionado else []
         ),
         "proximos_dias": proximos_dias,
-        "fecha_actual": fecha_query or str(hoy),
+        "fecha_actual": fecha_actual,
+        "fecha_display": fecha_display,
         "hoy_str": str(hoy),
         "es_medico": es_medico,
     }

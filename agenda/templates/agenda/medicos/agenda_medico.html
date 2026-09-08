@@ -1,63 +1,93 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Agenda de {{ medico }} · MedAgenda{% endblock %}
 
 {% block content %}
-<h2>Agenda de {{ medico }}</h2>
-
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
     <div>
-        Ver próximas:
-        <a href="?semanas=1" {% if semanas_actuales == "1" %}style="font-weight: bold;" {% endif %}>1 semana</a> |
-        <a href="?semanas=2" {% if semanas_actuales == "2" %}style="font-weight: bold;" {% endif %}>2 semanas</a> |
-        <a href="?semanas=4" {% if semanas_actuales == "4" %}style="font-weight: bold;" {% endif %}>4 semanas</a> |
-        <a href="?semanas=52" {% if semanas_actuales == "52" %}style="font-weight: bold;" {% endif %}>Todo el año</a>
+        <h1 class="ma-titulo mb-1">Agenda de <span class="ma-destacar">Dr. {{ medico.apellido }}</span></h1>
+        <p class="texto-pino mb-0">{{ medico.especialidad }}</p>
     </div>
-
-    <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-secondary">Volver a la lista de médicos</a>
-
+    <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Volver a médicos
+    </a>
 </div>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Fecha</th>
-            <th>Hora</th>
-            <th>Estado</th>
-            <th>Paciente</th>
-            <th>Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for slot in slots %}
-        <tr>
-            <td>{{ slot.fecha|date:"d/m/Y" }}</td>
-            <td>{{ slot.hora_inicio|time:"H:i" }}</td>
+<div class="mb-4 d-flex flex-wrap align-items-center gap-3">
+    <span class="texto-pino small fw-semibold">Ver próximas:</span>
+    <div class="segmentado" role="group" aria-label="Período a visualizar">
+        <a href="?semanas=1" class="segmentado__opcion {% if semanas_actuales == '1' %}activa{% endif %}">1 semana</a>
+        <a href="?semanas=2" class="segmentado__opcion {% if semanas_actuales == '2' %}activa{% endif %}">2 semanas</a>
+        <a href="?semanas=4" class="segmentado__opcion {% if semanas_actuales == '4' %}activa{% endif %}">4 semanas</a>
+        <a href="?semanas=52" class="segmentado__opcion {% if semanas_actuales == '52' %}activa{% endif %}">Todo el año</a>
+    </div>
+</div>
 
-            {% if slot.disponible %}
-            <td style="color: green;">Disponible</td>
-            <td>-</td>
-            <td>
-                <a href="{% url 'agenda:reservar_turno' slot.id %}" class="btn btn-sm btn-primary">
-                    Reservar
-                </a>
-            </td>
-            {% else %}
-            <td style="color: red;">Reservado</td>
-            <td>{{ slot.turno.paciente }}</td>
-            <td>
-                <a href="{% url 'agenda:cancelar_turno' slot.turno.id %}" class="btn btn-sm btn-danger">
-                    Cancelar
-                </a>
-            </td>
-            {% endif %}
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="5">No hay turnos generados para este período.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="ma-hoja">
+    <div class="ma-hoja__encabezado">
+        <h2 class="ma-titulo--chico mb-0">Turnos del <span class="ma-destacar">dr.</span></h2>
+        <small class="texto-pino">{{ slots|length }} turno{{ slots|length|pluralize }}</small>
+    </div>
 
-<br>
-<a href="{% url 'agenda:lista_medicos' %}" class="btn btn-secondary">Volver a la lista de médicos</a>
+    <div class="table-responsive">
+        <table class="table ma-tabla align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Estado</th>
+                    <th>Paciente</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for slot in slots %}
+                <tr>
+                    <td class="ma-numero fw-semibold">{{ slot.fecha|date:"d/m/Y" }}</td>
+                    <td class="ma-numero">{{ slot.hora_inicio|time:"H:i" }} – {{ slot.hora_fin|time:"H:i" }}</td>
+
+                    {% if slot.disponible %}
+                    <td><span class="sello sello--asistio">Disponible</span></td>
+                    <td class="texto-pino">—</td>
+                    <td class="text-end">
+                        {% if not es_medico %}
+                        <a href="{% url 'agenda:reservar_turno' slot.id %}" class="btn btn-sm btn-success">
+                            <i class="bi bi-check-lg me-1"></i> Reservar
+                        </a>
+                        {% endif %}
+                    </td>
+                    {% else %}
+                    <td><span class="sello sello--programado">Reservado</span></td>
+                    <td><span class="fw-semibold">{{ slot.turno.paciente }}</span></td>
+                    <td class="text-end">
+                        {% if not es_medico %}
+                        <a href="{% url 'agenda:cancelar_turno' slot.turno.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i> Cancelar
+                        </a>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">
+                        <div class="ma-vacio">
+                            <i class="bi bi-calendar2-x"></i>
+                            <div class="ma-vacio__titulo">Sin turnos en este período</div>
+                            <p class="ma-vacio__texto">
+                                No se generaron turnos para las próximas {{ semanas_actuales }} semana{{ semanas_actuales|pluralize }}.
+                                Generá la agenda desde "Mis médicos".
+                            </p>
+                            <a href="{% url 'agenda:generar_agenda' medico.id %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-lg me-1"></i> Generar turnos
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

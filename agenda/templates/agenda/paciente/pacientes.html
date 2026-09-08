@@ -1,94 +1,111 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pacientes · MedAgenda{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-people-fill"></i> Gestión de Pacientes</h2>
-        {% if not es_medico %}
-        <a href="{% url 'agenda:crear_paciente' %}" class="btn btn-success">
-            <i class="bi bi-person-plus"></i> + Nuevo Paciente
-        </a>
-        {% endif %}
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+    <div>
+        <h1 class="ma-titulo ma-titulo--grande mb-1">Pacientes</h1>
+        <p class="texto-pino mb-0">{{ pacientes|length }} paciente{{ pacientes|length|pluralize }} en el consultorio</p>
     </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
+    {% if not es_medico %}
+    <a href="{% url 'agenda:crear_paciente' %}" class="btn btn-primary">
+        <i class="bi bi-person-plus me-1"></i> Nuevo paciente
+    </a>
     {% endif %}
+</div>
 
-    <div class="card mb-4 shadow-sm border-0 bg-light">
-        <div class="card-body">
-            <form method="GET" class="row g-2">
-                <div class="col-md-10">
-                    <input type="text" name="q" class="form-control" placeholder="Buscar por DNI o Apellido..." value="{{ query }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">🔍 Buscar</button>
-                </div>
-            </form>
+<div class="ma-hoja mb-4 p-3">
+    <form method="GET" class="row g-2 align-items-center">
+        <div class="col">
+            <label class="visually-hidden" for="buscar">Buscar pacientes</label>
+            <div class="input-group">
+                <span class="input-group-text bg-transparent"><i class="bi bi-search"></i></span>
+                <input type="text" name="q" id="buscar" class="form-control input-xl"
+                    placeholder="Buscar por DNI o apellido..." value="{{ query }}">
+            </div>
         </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary px-4">Buscar</button>
+        </div>
+        {% if query %}
+        <div class="col-12">
+            <a href="{% url 'agenda:lista_pacientes' %}" class="small texto-pino">
+                <i class="bi bi-x-lg me-1"></i>Limpiar búsqueda
+            </a>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<div class="ma-hoja">
+    <div class="ma-hoja__encabezado">
+        <h2 class="ma-titulo--chico mb-0">Listado de <span class="ma-destacar">pacientes</span></h2>
     </div>
 
-    
-    <div class="card shadow-sm">
-        <div class="card-header bg-light">
-            <h5 class="mb-0">Listado de Pacientes</h5>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th>DNI</th>
-                        <th>Apellido y Nombre</th>
-                        <th>Email</th>
-                        <th>Edad</th>
-                        <th>Teléfono</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for p in pacientes %}
-                    <tr>
-                        <td><strong>{{ p.dni }}</strong></td>
-                        <td>
-                            <a href="{% url 'agenda:detalle_paciente' p.id %}" class="text-decoration-none fw-bold">
-                                {{ p.apellido|upper }}, {{ p.nombre }}
+    <div class="table-responsive">
+        <table class="table ma-tabla align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>DNI</th>
+                    <th>Apellido y nombre</th>
+                    <th>Email</th>
+                    <th>Edad</th>
+                    <th>Teléfono</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in pacientes %}
+                <tr>
+                    <td class="fw-bold ma-numero">{{ p.dni }}</td>
+                    <td>
+                        <a href="{% url 'agenda:detalle_paciente' p.id %}" class="text-decoration-none fw-semibold">
+                            {{ p.apellido|upper }}, {{ p.nombre }}
+                        </a>
+                    </td>
+                    <td class="texto-pino">{{ p.email }}</td>
+                    <td class="ma-numero">{{ p.edad }} años</td>
+                    <td class="ma-numero">{{ p.telefono }}</td>
+                    <td class="text-end">
+                        {% if not es_medico %}
+                        <div class="d-inline-flex gap-1">
+                            <a href="{% url 'agenda:editar_paciente' p.id %}" class="btn btn-sm btn-outline-secondary" title="Editar">
+                                <i class="bi bi-pencil"></i>
                             </a>
-                        </td>
-                        <td>{{ p.email }}</td>
-                        <td>{{ p.edad }} años</td>
-                        <td>{{ p.telefono }}</td>
-                        <td class="text-center">
-                            <div class="d-flex justify-content-center gap-2">
-                            
-                            {% if not es_medico %}
                             <form method="POST" style="display:inline;">
                                 {% csrf_token %}
-                                <a href="{% url 'agenda:editar_paciente' p.id %}" class="btn btn-sm btn-outline-secondary">
-                                    ✏️ Editar
-                                </a>
                                 <input type="hidden" name="paciente_id" value="{{ p.id }}">
-                                <button type="submit" name="borrar" class="btn btn-outline-danger btn-sm" 
-                                        onclick="return confirm('¿Está seguro de eliminar a {{ p.nombre }} {{ p.apellido }}?')">
-                                    <i class="bi bi-trash"></i> Borrar
-                                </button>                                
+                                <button type="submit" name="borrar" class="btn btn-sm btn-outline-danger" title="Borrar"
+                                        onclick="return confirm('¿Está seguro de eliminar a {{ p.nombre }} {{ p.apellido }}?');">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </form>
+                        </div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="ma-vacio">
+                            <i class="bi bi-people"></i>
+                            <div class="ma-vacio__titulo">No hay pacientes{% if query %} que coincidan{% endif %}</div>
+                            <p class="ma-vacio__texto">
+                                {% if query %}Probá con otro DNI o apellido.{% else %}Cargá el primer paciente para arrancar la ficha del consultorio.{% endif %}
+                            </p>
+                            {% if not es_medico and not query %}
+                            <a href="{% url 'agenda:crear_paciente' %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-person-plus me-1"></i> Nuevo paciente
+                            </a>
                             {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">No hay pacientes registrados en el sistema.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

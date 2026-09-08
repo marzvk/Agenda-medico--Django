@@ -1,47 +1,109 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reservar turno · MedAgenda{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card shadow-sm mx-auto" style="max-width: 500px;">
-        <div class="card-header bg-primary text-white">
-            <h3 class="h5 mb-0">Confirmar Reserva</h3>
+<div class="ma-hoja ma-auth__tarjeta" style="max-width: 540px;">
+    <div class="ma-hoja__encabezado">
+        <h1 class="ma-titulo--chico mb-0">Confirmar <span class="ma-destacar">reserva</span></h1>
+    </div>
+
+    <div class="ma-hoja__cuerpo">
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <small class="etiqueta-superior">Fecha</small>
+                <span class="fw-bold ma-numero">{{ slot.fecha|date:"d/m/Y" }}</span>
+            </div>
+            <div class="col-6">
+                <small class="etiqueta-superior">Horario</small>
+                <span class="fw-bold ma-numero">{{ slot.hora_inicio|time:"H:i" }} – {{ slot.hora_fin|time:"H:i" }}</span>
+            </div>
+            <div class="col-12">
+                <small class="etiqueta-superior">Médico</small>
+                <span class="fw-bold">Dr. {{ slot.medico.apellido }}, {{ slot.medico.nombre }}</span>
+                <span class="texto-pino"> · {{ slot.medico.especialidad }}</span>
+            </div>
         </div>
-        <div class="card-body">
-            <div class="alert alert-info py-2">
-                <strong>Fecha:</strong> {{ slot.fecha|date:"d/m/Y" }} <br>
-                <strong>Hora:</strong> {{ slot.hora_inicio|time:"H:i" }} - {{ slot.hora_fin|time:"H:i" }} <br>
-                <strong>Médico:</strong> {{ slot.medico.apellido }} {{ slot.medico.nombre }}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label" for="buscar-paciente">Paciente</label>
+                <input type="text" id="buscar-paciente" class="form-control input-xl" autocomplete="off"
+                    placeholder="Buscar por DNI, nombre o apellido..." aria-describedby="ayuda-paciente">
+                <div class="form-text" id="ayuda-paciente">Empezá a escribir y elegí al paciente de la lista.</div>
+                <div id="resultados-paciente" class="list-group list-group-flush mt-2"></div>
+                <div id="paciente-seleccionado" class="d-none mt-2">
+                    <span class="sello sello--asistio"><i class="bi bi-person-check"></i> <span id="paciente-seleccionado-nombre"></span></span>
+                </div>
+                <input type="hidden" name="paciente_id" id="paciente_id_real">
             </div>
 
-            <form method="post">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label class="form-label">Buscar Paciente (DNI o Nombre):</label>
-                    <input class="form-control" list="datalistOptions" id="pacienteSearch"
-                        placeholder="Ingrese DNI o Apellido..." name="paciente_id_search" autocomplete="off">
-                    <datalist id="datalistOptions">
-                        {% for p in pacientes %}
-                        <option value="{{ p.id }} - {{ p.dni }} - {{ p.apellido }}, {{ p.nombre }}">
-                        {% endfor %}
-                    </datalist>
-                    <input type="hidden" name="paciente_id" id="paciente_id_real">
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-success">Confirmar Turno</button>
-                    <a href="{% url 'agenda:agenda_medico' slot.medico.id %}" class="btn btn-light">Volver</a>
-                </div>
-            </form>
-        </div>
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success" id="btn-confirmar" disabled>
+                    <i class="bi bi-check-lg me-1"></i> Confirmar turno
+                </button>
+                <a href="{% url 'agenda:agenda_medico' slot.medico.id %}" class="btn btn-outline-secondary">Volver</a>
+            </div>
+        </form>
     </div>
 </div>
 
+{{ pacientes|json_script:"datos-pacientes" }}
+
 <script>
-    document.getElementById('pacienteSearch').addEventListener('input', function (e) {
-        let val = e.target.value;
-        if (val.includes(' - ')) {
-            document.getElementById('paciente_id_real').value = val.split(' - ')[0];
+(function () {
+    var PACIENTES = JSON.parse(document.getElementById("datos-pacientes").textContent);
+    var input = document.getElementById("buscar-paciente");
+    var resultados = document.getElementById("resultados-paciente");
+    var chip = document.getElementById("paciente-seleccionado");
+    var chipNombre = document.getElementById("paciente-seleccionado-nombre");
+    var oculto = document.getElementById("paciente_id_real");
+    var btn = document.getElementById("btn-confirmar");
+    var seleccionado = null;
+
+    function normalizar(t) { return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+
+    input.addEventListener("input", function () {
+        var q = normalizar(input.value.trim());
+        resultados.innerHTML = "";
+        if (q.length < 1) return;
+
+        var coincidencias = PACIENTES.filter(function (p) {
+            return normalizar(p.nombre + " " + p.apellido + " " + p.dni).indexOf(q) !== -1;
+        }).slice(0, 8);
+
+        if (!coincidencias.length) {
+            resultados.innerHTML = '<div class="list-group-item texto-pino small">No se encontró ningún paciente.</div>';
+            return;
         }
+
+        coincidencias.forEach(function (p) {
+            var item = document.createElement("button");
+            item.type = "button";
+            item.className = "list-group-item list-group-item-action d-flex justify-content-between align-items-center";
+            item.innerHTML = '<span><strong>' + p.apellido + ', ' + p.nombre + '</strong>' +
+                '</span><span class="ma-numero texto-pino small">DNI ' + p.dni + '</span>';
+            item.addEventListener("click", function () {
+                seleccionado = p;
+                oculto.value = p.id;
+                input.value = p.nombre + " " + p.apellido + " (" + p.dni + ")";
+                chipNombre.textContent = p.apellido + ", " + p.nombre + " · DNI " + p.dni;
+                chip.classList.remove("d-none");
+                resultados.innerHTML = "";
+                btn.disabled = false;
+            });
+            resultados.appendChild(item);
+        });
     });
+
+    input.addEventListener("blur", function () {
+        setTimeout(function () {
+            if (!seleccionado) { resultados.innerHTML = ""; }
+        }, 150);
+    });
+})();
 </script>
 {% endblock %}

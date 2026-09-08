@@ -1,24 +1,32 @@
 {% extends "base.html" %}
+{% load static %}
+
+{% block title %}Confirmar generación · MedAgenda{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="card border-warning shadow-sm">
-        <div class="card-body text-center">
-            <h3 class="card-title text-warning">⚠️ Confirmar Generación</h3>
-            <p class="card-text">
-                ¿Está seguro que desea generar los slots de atención para los próximos <strong>30 días</strong>
-                del médico <strong>{{ medico }}</strong>?
-            </p>
-            <p class="text-muted small">Esto no borrará turnos ya reservados.</p>
-
-            <form method="POST">
-                {% csrf_token %}
-                <div class="mt-4">
-                    <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-outline-secondary me-2">Cancelar</a>
-                    <button type="submit" class="btn btn-warning">Sí, generar agenda</button>
-                </div>
-            </form>
+<div class="ma-hoja ma-auth__tarjeta" style="max-width: 520px; text-align:center;">
+    <div class="ma-hoja__cuerpo">
+        <div class="d-flex justify-content-center mb-3">
+            <span class="ma-avatar" style="width:52px;height:52px;font-size:24px;border-radius:12px;">
+                <i class="bi bi-calendar2-plus"></i>
+            </span>
         </div>
+        <h1 class="ma-titulo--chico mb-2">Confirmar <span class="ma-destacar">generación</span></h1>
+        <p class="texto-pino mb-1">
+            Vas a generar los slots de atención para los próximos <strong>30 días</strong> de
+            <strong>Dr. {{ medico }}</strong>.
+        </p>
+        <p class="small muted mb-4">Esto no borrará turnos ya reservados.</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{% url 'agenda:lista_medicos' %}" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-warning text-dark">
+                    <i class="bi bi-magic me-1"></i> Sí, generar agenda
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
