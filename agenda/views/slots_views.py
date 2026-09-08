@@ -37,11 +37,19 @@ def generar_agenda(request, medico_id):
             )
             return redirect("agenda:generar_agenda", medico_id=medico.id)
 
-        semanas = int(request.POST.get("semanas", 4))
+        try:
+            semanas = int(request.POST.get("semanas", 4))
+        except (TypeError, ValueError):
+            semanas = 4
         dias_seleccionados = request.POST.getlist("dias_seleccionados")
         modo = request.POST.get("modo")
 
-        dias_indices = [int(d) for d in dias_seleccionados]
+        dias_indices = []
+        for d in dias_seleccionados:
+            if d.isdigit():
+                val = int(d)
+                if 0 <= val <= 6:
+                    dias_indices.append(val)
 
         fecha_inicio = hoy + timedelta(days=1)
         fecha_fin = hoy + timedelta(weeks=semanas)

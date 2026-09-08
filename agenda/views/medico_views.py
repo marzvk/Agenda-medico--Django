@@ -35,7 +35,10 @@ def agenda_medico(request, medico_id):
         if request.user.perfil_medico.id != medico_id:
             raise PermissionDenied
 
-    semanas = int(request.GET.get("semanas", 1))
+    try:
+        semanas = int(request.GET.get("semanas", 1))
+    except (TypeError, ValueError):
+        semanas = 1
 
     hoy = date.today()
     fecha_limite = hoy + timedelta(weeks=semanas)
