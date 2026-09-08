@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.utils import timezone
-from datetime import timedelta, date, time
+from datetime import datetime, timedelta, date, time
 from django.core.exceptions import ValidationError
 from unittest import mock
 
@@ -137,3 +137,75 @@ class TurnoServiceTest(TestCase):
 
         slot_futuro.refresh_from_db()
         self.assertFalse(slot_futuro.disponible)
+
+    def test_confirmacion_se_encola_con_id_del_turno(self):
+        """delay recibe el ID del turno (Celery serializa JSON, no objetos)."""
+        slot_futuro = Slot.objects.create(
+            medico=self.medico,
+            fecha=date.today() + timedelta(days=7),
+            hora_inicio=time(10, 0),
+            hora_fin=time(10, 30),
+            disponible=True,
+        )
+
+        with mock.patch.object(tareas.tarea_confirmacion_turno, "delay") as mock_delay, \
+             mock.patch.object(tareas.tarea_recordatorio_turno, "apply_async"):
+            with self.captureOnCommitCallbacks(execute=True):
+                turno = TurnoService.crear_turno(slot_futuro, self.paciente)
+
+        mock_delay.assert_called_once_with(turno.id)
+
+    def test_eta_recordatorio_calculado_correctamente(self):
+        """
+        apply_async recibe eta = fecha_hora del turno − horas_recordatorio_paciente.
+        Es el corazón del "avisame X horas antes".
+        """
+        slot_futuro = Slot.objects.create(
+            medico=self.medico,
+            fecha=date.today() + timedelta(days=4),
+            hora_inicio=time(10, 0),
+            hora_fin=time(10, 30),
+            disponible=True,
+        )
+        self.medico.horas_recordatorio_paciente = 24
+
+        with mock.patch.object(tareas.tarea_confirmacion_turno, "delay"), \
+             mock.patch.object(tareas.tarea_recordatorio_turno, "apply_async") as mock_async:
+            with self.captureOnCommitCallbacks(execute=True):
+                TurnoService.crear_turno(slot_futuro, self.paciente)
+
+        mock_async.assert_called_once()
+        eta = mock_async.call_args.kwargs["eta"]
+
+        turno_datetime = datetime.combine(
+            slot_futuro.fecha,
+            slot_futuro.hora_inicio,
+            tzinfo=timezone.get_current_timezone(),
+        )
+        self.assertEqual(eta, turno_datetime - timedelta(hours=24))
+
+    def test_eta_pasado_no_encola_recordatorio(self):
+        """
+        Si el turno es tan próximo que el usuero ya debería estar avisado
+        (eta < ahora), NO se agenda el recordatorio.
+        Caso real: crear un turno a 12h con recordatorio configurado a 24h.
+        """
+        self.medico.horas_recordatorio_paciente = 24
+
+        objetivo = timezone.localtime() + timedelta(hours=12)
+        slot_proximo = Slot.objects.create(
+            medico=self.medico,
+            fecha=objetivo.date(),
+            hora_inicio=objetivo.time(),
+            hora_fin=(objetivo + timedelta(minutes=30)).time(),
+            disponible=True,
+        )
+
+        with mock.patch.object(tareas.tarea_confirmacion_turno, "delay") as mock_delay, \
+             mock.patch.object(tareas.tarea_recordatorio_turno, "apply_async") as mock_async:
+            with self.captureOnCommitCallbacks(execute=True):
+                TurnoService.crear_turno(slot_proximo, self.paciente)
+            self.slot.refresh_from_db()
+
+        mock_delay.assert_called_once()
+        mock_async.assert_not_called()

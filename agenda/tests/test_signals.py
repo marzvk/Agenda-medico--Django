@@ -1,9 +1,12 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.core import mail
 from django_celery_beat.models import PeriodicTask
 import datetime
+from unittest import mock
 
-from agenda.models import Medico
+from agenda.models import Medico, TokenVerificacion
+from agenda.signals import _hora_resumen
 
 
 class SignalsMedicoTestCase(TestCase):
@@ -141,3 +144,46 @@ class TestSignalEliminacionMedico(SignalsMedicoTestCase):
         ).exists()
 
         self.assertFalse(existe)
+
+
+class TestHoraResumenDefensiva(TestCase):
+    """Rama que arreglamos en Fase A: hora_resumen_diario llegaba como string."""
+
+    def test_hora_como_string_se_normaliza(self):
+        medico = mock.Mock(hora_resumen_diario="08:00")
+        self.assertEqual(_hora_resumen(medico), datetime.time(8, 0))
+
+    def test_hora_none_usa_default(self):
+        medico = mock.Mock(hora_resumen_diario=None)
+        self.assertEqual(_hora_resumen(medico), datetime.time(8, 0))
+
+
+class TestSignalRegistroUsuario(TestCase):
+    """La signal de creación de usuario (activación por mail) nunca tenía tests:
+    todos los fixtures de auth la desconectaban a propósito."""
+
+    def test_usuario_normal_queda_inactivo_con_token_y_mail(self):
+        user = User.objects.create_user(
+            username="nuevo_user", email="nuevo@test.com", password="pass1234"
+        )
+
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+
+        token = TokenVerificacion.objects.get(
+            usuario=user, tipo=TokenVerificacion.TIPO_ACTIVACION
+        )
+        self.assertIsNotNone(token)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("nuevo@test.com", mail.outbox[0].to)
+
+    def test_superusuario_no_genera_token_ni_mail(self):
+        admin = User.objects.create_superuser(
+            username="root", email="root@test.com", password="pass1234"
+        )
+
+        admin.refresh_from_db()
+        self.assertTrue(admin.is_active)
+        self.assertFalse(TokenVerificacion.objects.filter(usuario=admin).exists())
+        self.assertEqual(len(mail.outbox), 0)
